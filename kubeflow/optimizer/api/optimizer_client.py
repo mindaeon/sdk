@@ -16,6 +16,7 @@ import logging
 from typing import Any, Optional
 
 from kubeflow.common.types import KubernetesBackendConfig
+from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
 from kubeflow.optimizer.backends.kubernetes.backend import KubernetesBackend
 from kubeflow.optimizer.types.algorithm_types import BaseAlgorithm
@@ -25,7 +26,7 @@ from kubeflow.trainer.types.types import TrainJobTemplate
 logger = logging.getLogger(__name__)
 
 
-class OptimizerClient:
+class OptimizerClient(BaseClient):
     def __init__(
         self,
         config: Optional[KubeflowConfig] = None,
@@ -36,10 +37,8 @@ class OptimizerClient:
             config: The Kubeflow configuration. If not provided, the default
                 configuration will be used.
         """
-        if not config:
-            config = KubeflowConfig()
-
-        backend_config = KubernetesBackendConfig(namespace=config.client.namespace)
+        super().__init__(config=config)
+        backend_config = KubernetesBackendConfig(namespace=self.config.client.namespace)
         self.backend = KubernetesBackend(backend_config)
 
     def optimize(
