@@ -16,7 +16,6 @@ import logging
 from typing import Any, Optional
 
 from kubeflow.common.types import KubernetesBackendConfig
-from kubeflow.core.config import KubeflowConfig
 from kubeflow.optimizer.backends.kubernetes.backend import KubernetesBackend
 from kubeflow.optimizer.types.algorithm_types import BaseAlgorithm
 from kubeflow.optimizer.types.optimization_types import Objective, OptimizationJob, TrialConfig
@@ -28,23 +27,26 @@ logger = logging.getLogger(__name__)
 class OptimizerClient:
     def __init__(
         self,
-        config: Optional[KubeflowConfig] = None,
         backend_config: Optional[KubernetesBackendConfig] = None,
     ):
         """Initialize a Kubeflow Optimizer client.
 
         Args:
-            config: The Kubeflow configuration. If not provided, the default
-                configuration will be used.
             backend_config: Backend configuration. Either KubernetesBackendConfig or None to use
                 default config class. Defaults to KubernetesBackendConfig.
-        """
-        if not config:
-            config = KubeflowConfig()
 
+        Raises:
+            ValueError: Invalid backend configuration.
+
+        """
+        # Set the default backend config.
         if not backend_config:
-            backend_config = KubernetesBackendConfig(namespace=config.client.namespace)
-        self.backend = KubernetesBackend(backend_config)
+            backend_config = KubernetesBackendConfig()
+
+        if isinstance(backend_config, KubernetesBackendConfig):
+            self.backend = KubernetesBackend(backend_config)
+        else:
+            raise ValueError(f"Invalid backend config '{backend_config}'")
 
     def optimize(
         self,
