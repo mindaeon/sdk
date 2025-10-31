@@ -1,0 +1,5 @@
+site_name: Kubeflow SDK
+theme:
+  name: material
+nav:
+  - Home: index.md
