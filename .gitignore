@@ -18,3 +18,6 @@ htmlcov/
 
 # MkDocs
 site/
+
+# Environment variables
+.env
