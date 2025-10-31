@@ -28,8 +28,10 @@ class KubeflowConfig(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="kubeflow_",
         env_nested_delimiter="__",
+        extra="ignore",
     )
     client: ClientConfig = Field(default_factory=ClientConfig)
+    config_file: str | None = None
 
     def __init__(self, **values):
         config_data = {}
@@ -47,7 +49,7 @@ class KubeflowConfig(BaseSettings):
                 self._assign_nested(config_data, key, value)
 
         merged = self._merge(config_data, values)
-        merged.pop("config_file", None)
+        merged["config_file"] = config_file
         super().__init__(**merged)
 
     @staticmethod
