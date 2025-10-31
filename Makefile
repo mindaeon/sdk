@@ -94,3 +94,7 @@ install-dev: uv uv-venv ruff  ## Install uv, create .venv, sync deps.
 	@echo "Syncing dependencies with uv..."
 	@uv sync
 	@echo "Environment is ready."
+
+.PHONY: docs
+docs: install-dev ## Build the documentation
+	@uv run mkdocs build
