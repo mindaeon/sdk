@@ -2,7 +2,7 @@
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# You may not use this file except in compliance with the License.
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pydantic import BaseModel
-import yaml
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class ClientConfig(BaseModel):
+class ClientConfig(BaseSettings):
     namespace: str = "default"
 
-class KubeflowConfig(BaseModel):
+class KubeflowConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="kubeflow_", env_nested_delimiter="__")
     client: ClientConfig = ClientConfig()
-
-    @classmethod
-    def from_file(cls, path: str) -> "KubeflowConfig":
-        with open(path, "r") as f:
-            config_dict = yaml.safe_load(f)
-        return cls(**config_dict)
