@@ -142,12 +142,15 @@ class TrainerClient(BaseClient):
     def _runtime_from_k8s_resource(self, resource: K8sResource) -> types.Runtime:
         """Convert a K8sResource to a Runtime."""
         spec = resource.spec or {}
+        ml_policy = models.TrainerV1alpha1MLPolicy(
+            **spec.get("mlPolicy", {})
+        )
         return types.Runtime(
             name=resource.name,
             trainer=utils.get_runtime_trainer(
                 resource.labels.get(constants.RUNTIME_FRAMEWORK_LABEL, ""),
                 spec.get("template", {}).get("spec", {}).get("replicatedJobs", []),
-                spec.get("mlPolicy", {}),
+                ml_policy,
             ),
         )
 
