@@ -39,7 +39,7 @@ class OptimizerClient(BaseClient):
         """
         super().__init__(config=config)
         backend_config = KubernetesBackendConfig(namespace=self.config.client.namespace)
-        self.backend = KubernetesBackend(backend_config)
+        self.backend = KubernetesBackend(backend_config, self.api_client)
 
     def optimize(
         self,

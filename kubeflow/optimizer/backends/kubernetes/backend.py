@@ -44,21 +44,12 @@ logger = logging.getLogger(__name__)
 
 
 class KubernetesBackend(RuntimeBackend):
-    def __init__(self, cfg: KubernetesBackendConfig):
+    def __init__(self, cfg: KubernetesBackendConfig, api_client: client.ApiClient):
         if cfg.namespace is None:
             cfg.namespace = common_utils.get_default_target_namespace(cfg.context)
 
-        # If client configuration is not set, use kube-config to access Kubernetes APIs.
-        if cfg.client_configuration is None:
-            # Load kube-config or in-cluster config.
-            if cfg.config_file or not common_utils.is_running_in_k8s():
-                config.load_kube_config(config_file=cfg.config_file, context=cfg.context)
-            else:
-                config.load_incluster_config()
-
-        k8s_client = client.ApiClient(cfg.client_configuration)
-        self.custom_api = client.CustomObjectsApi(k8s_client)
-        self.core_api = client.CoreV1Api(k8s_client)
+        self.custom_api = client.CustomObjectsApi(api_client)
+        self.core_api = client.CoreV1Api(api_client)
 
         self.namespace = cfg.namespace
         self.trainer_backend = TrainerBackend(cfg)

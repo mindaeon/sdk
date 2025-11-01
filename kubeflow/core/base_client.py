@@ -13,13 +13,25 @@
 # limitations under the License.
 
 from .config import KubeflowConfig
+from .auth import AuthProvider, KubeConfigAuthProvider
 from typing import Optional
+from kubernetes import client
 
 class BaseClient:
     """Base class for Kubeflow clients."""
 
-    def __init__(self, config: Optional[KubeflowConfig] = None):
+    def __init__(
+        self,
+        config: Optional[KubeflowConfig] = None,
+        auth_provider: Optional[AuthProvider] = None,
+    ):
         """Initializes the BaseClient."""
         if not config:
             config = KubeflowConfig()
         self.config = config
+
+        if not auth_provider:
+            auth_provider = KubeConfigAuthProvider()
+        self.auth_provider = auth_provider
+
+        self.api_client = client.ApiClient(self.auth_provider.get_credentials())
