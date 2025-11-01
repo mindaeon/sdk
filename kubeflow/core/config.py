@@ -20,6 +20,13 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+from typing import Literal
+
+
+class AuthConfig(BaseModel):
+    provider: Literal["kubeconfig", "incluster"] = "kubeconfig"
+
+
 class ClientConfig(BaseModel):
     namespace: str = "default"
 
@@ -35,6 +42,7 @@ class KubeflowConfig(BaseSettings):
       4. Defaults
     """
 
+    auth: AuthConfig = Field(default_factory=AuthConfig)
     client: ClientConfig = Field(default_factory=ClientConfig)
     config_file: Optional[str] = None
 
@@ -58,5 +66,7 @@ class KubeflowConfig(BaseSettings):
                 yaml_data = yaml.safe_load(f) or {}
 
             # Apply YAML values only if not already set
+            if "auth" not in fields_set and "auth" in yaml_data:
+                self.auth = AuthConfig(**yaml_data.get("auth", {}))
             if "client" not in fields_set and "client" in yaml_data:
                 self.client = ClientConfig(**yaml_data.get("client", {}))

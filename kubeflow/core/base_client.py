@@ -12,8 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .config import KubeflowConfig
 from typing import Optional
+
+from kubernetes import client
+
+from .auth import InClusterAuthProvider, KubeconfigAuthProvider
+from .config import KubeflowConfig
+
 
 class BaseClient:
     """Base class for Kubeflow clients."""
@@ -23,3 +28,15 @@ class BaseClient:
         if not config:
             config = KubeflowConfig()
         self.config = config
+
+        if self.config.auth.provider == "kubeconfig":
+            auth_provider = KubeconfigAuthProvider()
+        elif self.config.auth.provider == "incluster":
+            auth_provider = InClusterAuthProvider()
+        else:
+            raise ValueError(
+                f"Invalid auth provider: {self.config.auth.provider}"
+            )
+
+        k8s_config = auth_provider.get_api_client_configuration()
+        self.api_client = client.ApiClient(k8s_config)

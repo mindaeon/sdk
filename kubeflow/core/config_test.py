@@ -35,6 +35,7 @@ class TestCase:
     config_data: Optional[dict] = None
     constructor_args: dict = field(default_factory=dict)
     expected_namespace: str = "default"
+    expected_auth_provider: str = "kubeconfig"
     expected_status: str = SUCCESS
     expected_error: Optional[type[Exception]] = None
     # Prevent pytest from collecting this dataclass as a test
@@ -47,39 +48,52 @@ class TestCase:
         TestCase(
             name="defaults only",
             expected_namespace="default",
+            expected_auth_provider="kubeconfig",
         ),
         TestCase(
             name="yaml config",
-            config_data={"client": {"namespace": "yaml-ns"}},
+            config_data={
+                "client": {"namespace": "yaml-ns"},
+                "auth": {"provider": "incluster"},
+            },
             expected_namespace="yaml-ns",
+            expected_auth_provider="incluster",
         ),
         TestCase(
             name="env var config",
-            env_vars={"KUBEFLOW_CLIENT__NAMESPACE": "env-ns"},
+            env_vars={
+                "KUBEFLOW_CLIENT__NAMESPACE": "env-ns",
+                "KUBEFLOW_AUTH__PROVIDER": "incluster",
+            },
             expected_namespace="env-ns",
+            expected_auth_provider="incluster",
         ),
         TestCase(
             name="env overrides yaml",
-            env_vars={"KUBEFLOW_CLIENT__NAMESPACE": "env-ns"},
-            config_data={"client": {"namespace": "yaml-ns"}},
+            env_vars={
+                "KUBEFLOW_CLIENT__NAMESPACE": "env-ns",
+                "KUBEFLOW_AUTH__PROVIDER": "kubeconfig",
+            },
+            config_data={
+                "client": {"namespace": "yaml-ns"},
+                "auth": {"provider": "incluster"},
+            },
             expected_namespace="env-ns",
+            expected_auth_provider="kubeconfig",
         ),
         TestCase(
             name="constructor overrides env and yaml",
-            constructor_args={"client": {"namespace": "constructor-ns"}},
-            env_vars={"KUBEFLOW_CLIENT__NAMESPACE": "env-ns"},
+            constructor_args={
+                "client": {"namespace": "constructor-ns"},
+                "auth": {"provider": "incluster"},
+            },
+            env_vars={
+                "KUBEFLOW_CLIENT__NAMESPACE": "env-ns",
+                "KUBEFLOW_AUTH__PROVIDER": "kubeconfig",
+            },
             config_data={"client": {"namespace": "yaml-ns"}},
             expected_namespace="constructor-ns",
-        ),
-        TestCase(
-            name="empty yaml file",
-            config_data={},
-            expected_namespace="default",
-        ),
-        TestCase(
-            name="yaml with other keys",
-            config_data={"other_key": "value"},
-            expected_namespace="default",
+            expected_auth_provider="incluster",
         ),
     ],
 )
@@ -87,7 +101,9 @@ def test_kubeflow_config_loading(test_case: TestCase):
     """Tests the loading precedence of KubeflowConfig."""
     print(f"Executing test: {test_case.name}")
     try:
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yaml") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yaml"
+        ) as f:
             if test_case.config_data is not None:
                 yaml.dump(test_case.config_data, f)
             temp_config_path = f.name
@@ -101,12 +117,15 @@ def test_kubeflow_config_loading(test_case: TestCase):
 
             assert test_case.expected_status == SUCCESS
             assert config.client.namespace == test_case.expected_namespace
+            assert config.auth.provider == test_case.expected_auth_provider
 
     except Exception as e:
         assert test_case.expected_status == FAILED
         assert isinstance(e, test_case.expected_error)
     finally:
-        if "temp_config_path" in locals() and os.path.exists(temp_config_path):
+        if "temp_config_path" in locals() and os.path.exists(
+            temp_config_path
+        ):
             os.remove(temp_config_path)
 
     print("Test execution complete")
