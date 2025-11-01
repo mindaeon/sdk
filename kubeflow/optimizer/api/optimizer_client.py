@@ -18,8 +18,6 @@ from typing import Any, Optional
 from kubeflow.common.types import KubernetesBackendConfig
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
-from kubeflow.core.base_client import BaseClient
-from kubeflow.core.config import KubeflowConfig
 from kubeflow.optimizer.backends.kubernetes.backend import KubernetesBackend
 from kubeflow.optimizer.types.algorithm_types import BaseAlgorithm
 from kubeflow.optimizer.types.optimization_types import Objective, OptimizationJob, TrialConfig
