@@ -12,20 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC, abstractmethod
-from kubernetes import client
+class LocalRunner:
+    """A local runner for Kubeflow TrainJobs."""
 
-class AuthProvider(ABC):
-    """Abstract base class for authentication providers."""
-
-    @abstractmethod
-    def get_credentials(self) -> client.Configuration:
-        """Returns a Kubernetes client configuration."""
+    def __init__(self):
+        """Initializes the LocalRunner."""
         pass
 
-class KubeConfigAuthProvider(AuthProvider):
-    """An authentication provider that uses the local kubeconfig file."""
-
-    def get_credentials(self) -> client.Configuration:
-        """Loads credentials from the local kubeconfig file."""
-        return client.Configuration.get_default_copy()
+    def run(self, train_job):
+        """Runs the TrainJob locally."""
+        pass
