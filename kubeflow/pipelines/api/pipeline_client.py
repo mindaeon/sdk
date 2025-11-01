@@ -12,9 +12,71 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class PipelineClient:
+from typing import Optional
+
+from kubeflow.core.base_client import BaseClient
+from kubeflow.core.config import KubeflowConfig
+
+
+class PipelineClient(BaseClient):
     """A client for interacting with Kubeflow Pipelines."""
 
-    def __init__(self):
+    def __init__(self, config: Optional[KubeflowConfig] = None):
         """Initializes the PipelineClient."""
-        pass
+        super().__init__(config)
+        self.api_version = "v2beta1"
+
+    def create_pipeline(self, pipeline_name: str, pipeline_package_path: str):
+        """Creates a pipeline."""
+        with open(pipeline_package_path, "rb") as f:
+            pipeline_package = f.read()
+
+        response = self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines/upload",
+            "POST",
+            query_params=[("name", pipeline_name)],
+            body=pipeline_package,
+            header_params={"Content-Type": "application/zip"},
+            _preload_content=False,
+        )
+        return response
+
+    def create_pipeline_version(self, pipeline_id: str, pipeline_package_path: str):
+        """Creates a pipeline version."""
+        with open(pipeline_package_path, "rb") as f:
+            pipeline_package = f.read()
+
+        response = self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines/{pipeline_id}/versions/upload",
+            "POST",
+            body=pipeline_package,
+            header_params={"Content-Type": "application/zip"},
+            _preload_content=False,
+        )
+        return response
+
+    def get_pipeline(self, pipeline_id: str):
+        """Gets a pipeline."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines/{pipeline_id}", "GET"
+        )
+
+    def get_pipeline_by_name(self, pipeline_name: str):
+        """Gets a pipeline by name."""
+        pipelines = self.list_pipelines()
+        for pipeline in pipelines["pipelines"]:
+            if pipeline["display_name"] == pipeline_name:
+                return self.get_pipeline(pipeline["pipeline_id"])
+        return None
+
+    def list_pipelines(self):
+        """Lists pipelines."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines", "GET"
+        )
+
+    def delete_pipeline(self, pipeline_id: str):
+        """Deletes a pipeline."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines/{pipeline_id}", "DELETE"
+        )
