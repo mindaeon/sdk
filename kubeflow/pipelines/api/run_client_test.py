@@ -18,6 +18,7 @@ import pytest
 from kubernetes import client
 from kubeflow.core.config import KubeflowConfig
 from kubeflow.pipelines.api.run_client import RunClient
+from kubeflow.pipelines.types.run_types import Run, RunState
 
 
 @pytest.fixture
@@ -60,7 +61,14 @@ def test_get_run(fake_config):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
-        mock_api_client.return_value.call_api = MagicMock()
+        mock_api_client.return_value.call_api = MagicMock(
+            return_value={
+                "run_id": "test-run-id",
+                "display_name": "test-run",
+                "created_at": "2025-01-01T00:00:00Z",
+                "state": "RUNNING",
+            }
+        )
         run_client = RunClient(config=fake_config)
         run_client.get_run("test-run-id")
 
@@ -105,3 +113,91 @@ def test_delete_run(fake_config):
         run_client.api_client.call_api.assert_called_with(
             "/apis/v2beta1/runs/test-run-id", "DELETE"
         )
+
+
+def test_wait_for_run_completion_success(fake_config):
+    """Tests the wait_for_run_completion method for a successful run."""
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client, patch("time.sleep"):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.get_run = MagicMock(
+            side_effect=[
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.RUNNING,
+                ),
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.SUCCEEDED,
+                ),
+            ]
+        )
+        run = run_client.wait_for_run_completion("test-run-id")
+        assert run.state == RunState.SUCCEEDED
+
+
+def test_wait_for_run_completion_failure(fake_config):
+    """Tests the wait_for_run_completion method for a failed run."""
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client, patch("time.sleep"):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.get_run = MagicMock(
+            side_effect=[
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.RUNNING,
+                ),
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.FAILED,
+                ),
+            ]
+        )
+        run = run_client.wait_for_run_completion("test-run-id")
+        assert run.state == RunState.FAILED
+
+
+def test_wait_for_run_completion_timeout(fake_config):
+    """Tests the wait_for_run_completion method for a timeout."""
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client, patch("time.sleep"):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.get_run = MagicMock(
+            return_value=Run(
+                run_id="test-run-id",
+                display_name="test-run",
+                created_at="2025-01-01T00:00:00Z",
+                state=RunState.RUNNING,
+            )
+        )
+        with pytest.raises(TimeoutError):
+            run_client.wait_for_run_completion("test-run-id", timeout=1)

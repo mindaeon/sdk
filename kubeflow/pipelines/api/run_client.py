@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
+from kubeflow.pipelines.types.run_types import Run, RunState
 
 
 class RunClient(BaseClient):
@@ -33,11 +36,12 @@ class RunClient(BaseClient):
             f"/apis/{self.api_version}/runs", "POST", body=body
         )
 
-    def get_run(self, run_id: str):
+    def get_run(self, run_id: str) -> Run:
         """Gets a pipeline run."""
-        return self.api_client.call_api(
+        response = self.api_client.call_api(
             f"/apis/{self.api_version}/runs/{run_id}", "GET"
         )
+        return Run(**response)
 
     def list_runs(self):
         """Lists pipeline runs."""
@@ -48,3 +52,18 @@ class RunClient(BaseClient):
         return self.api_client.call_api(
             f"/apis/{self.api_version}/runs/{run_id}", "DELETE"
         )
+
+    def wait_for_run_completion(self, run_id: str, timeout: int = 600) -> Run:
+        """Waits for a pipeline run to complete."""
+        end_time = datetime.now(timezone.utc) + timedelta(seconds=timeout)
+        while datetime.now(timezone.utc) < end_time:
+            run = self.get_run(run_id)
+            if run.state in [
+                RunState.SUCCEEDED,
+                RunState.FAILED,
+                RunState.SKIPPED,
+                RunState.CANCELED,
+            ]:
+                return run
+            time.sleep(10)
+        raise TimeoutError(f"Run {run_id} did not complete in {timeout} seconds.")

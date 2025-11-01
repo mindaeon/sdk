@@ -13,9 +13,21 @@
 # limitations under the License.
 
 from datetime import datetime
+from enum import Enum
 from typing import Dict, Any, Optional
 
 from pydantic import BaseModel
+
+
+class RunState(str, Enum):
+    """The state of a pipeline run."""
+
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
+    CANCELED = "CANCELED"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
 
 
 class Run(BaseModel):
@@ -24,7 +36,7 @@ class Run(BaseModel):
     run_id: str
     display_name: str
     created_at: datetime
-    state: str
+    state: RunState
     error: Optional[Dict[str, Any]] = None
     pipeline_version_reference: Optional[Dict[str, Any]] = None
 
