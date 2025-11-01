@@ -1,4 +1,4 @@
-# Copyright 2024 The Kubeflow Authors.
+# Copyright 2025 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,39 +12,166 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch
+"""Unit tests for kubeflow.core.base_client and helper methods."""
 
 import pytest
+from unittest.mock import patch
 from kubernetes import client
+
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
+from kubeflow.core.k8s_resource import K8sResource
+
+# A sample Kubernetes resource dictionary for testing
+SAMPLE_RESOURCE = {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {"name": "test-pod"},
+}
 
 
+@pytest.fixture
+def base_cfg():
+    """Fixture to create a default KubeflowConfig."""
+    cfg = KubeflowConfig()
+    return cfg
+
+
+def test_kubeconfig_auth_provider_selected(base_cfg):
+    """Ensure BaseClient uses KubeconfigAuthProvider when configured."""
+    base_cfg.auth.provider = "kubeconfig"
+    fake_conf = client.Configuration()
+
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
+        mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
+        base = BaseClient(base_cfg)
+        mock_provider.assert_called_once()
+        mock_api_client.assert_called_once_with(fake_conf)
+        assert base.api_client == mock_api_client.return_value
+        assert base.config.auth.provider == "kubeconfig"
+
+
+def test_incluster_auth_provider_selected(base_cfg):
+    """Ensure BaseClient uses InClusterAuthProvider when configured."""
+    base_cfg.auth.provider = "incluster"
+    fake_conf = client.Configuration()
+
+    with patch(
+        "kubeflow.core.base_client.InClusterAuthProvider"
+    ) as mock_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
+        mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
+        base = BaseClient(base_cfg)
+        mock_provider.assert_called_once()
+        mock_api_client.assert_called_once_with(fake_conf)
+        assert base.api_client == mock_api_client.return_value
+        assert base.config.auth.provider == "incluster"
+
+
+def test_invalid_provider_raises(base_cfg):
+    """Ensure ValueError is raised for invalid auth provider."""
+    base_cfg.auth.provider = "invalid"
+    with pytest.raises(ValueError) as excinfo:
+        BaseClient(base_cfg)
+    assert "Invalid auth provider" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
+# Extended Tests for Custom Resource Helper Methods
+# ---------------------------------------------------------------------------
+
+
+@patch("kubeflow.core.base_client.client.CustomObjectsApi")
 @patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_base_client_kubeconfig_auth(mock_kubeconfig_provider):
-    """Tests that BaseClient uses KubeconfigAuthProvider by default."""
-    mock_kubeconfig_provider.return_value.get_api_client_configuration.return_value = (
+def test_get_custom_resource(mock_auth_provider, mock_custom_api_class):
+    """Verify that get_custom_resource delegates correctly to CustomObjectsApi."""
+    mock_auth_provider.return_value.get_api_client_configuration.return_value = (
         client.Configuration()
     )
-    BaseClient()
-    mock_kubeconfig_provider.assert_called_once()
+    mock_custom_api_instance = mock_custom_api_class.return_value
+    mock_custom_api_instance.get_namespaced_custom_object.return_value = SAMPLE_RESOURCE
+
+    base = BaseClient()
+    resource = base.get_custom_resource(
+        group="testgroup", version="v1", plural="tests", name="test-resource"
+    )
+
+    mock_custom_api_instance.get_namespaced_custom_object.assert_called_once()
+    assert isinstance(resource, K8sResource)
+    assert resource.name == "test-pod"
 
 
-@patch("kubeflow.core.base_client.InClusterAuthProvider")
-def test_base_client_incluster_auth(mock_incluster_provider):
-    """Tests that BaseClient uses InClusterAuthProvider when configured."""
-    mock_incluster_provider.return_value.get_api_client_configuration.return_value = (
+@patch("kubeflow.core.base_client.client.CustomObjectsApi")
+@patch("kubeflow.core.base_client.KubeconfigAuthProvider")
+def test_list_custom_resources(mock_auth_provider, mock_custom_api_class):
+    """Verify that list_custom_resources delegates correctly."""
+    mock_auth_provider.return_value.get_api_client_configuration.return_value = (
         client.Configuration()
     )
-    config = KubeflowConfig(auth={"provider": "incluster"})
-    BaseClient(config=config)
-    mock_incluster_provider.assert_called_once()
+    mock_custom_api_instance = mock_custom_api_class.return_value
+    mock_custom_api_instance.list_namespaced_custom_object.return_value = {
+        "items": [SAMPLE_RESOURCE]
+    }
+
+    base = BaseClient()
+    resources = base.list_custom_resources(
+        group="testgroup", version="v1", plural="tests"
+    )
+
+    mock_custom_api_instance.list_namespaced_custom_object.assert_called_once()
+    assert len(resources) == 1
+    assert resources[0].name == "test-pod"
 
 
-def test_base_client_invalid_auth_provider():
-    """Tests that BaseClient raises an error for an invalid provider."""
-    with pytest.raises(ValueError):
-        config = KubeflowConfig()
-        # Manually set an invalid provider to bypass pydantic validation
-        config.auth.provider = "invalid"
-        BaseClient(config=config)
+@patch("kubeflow.core.base_client.client.CustomObjectsApi")
+@patch("kubeflow.core.base_client.KubeconfigAuthProvider")
+def test_create_custom_resource(mock_auth_provider, mock_custom_api_class):
+    """Verify create_custom_resource delegates correctly."""
+    mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+        client.Configuration()
+    )
+    mock_custom_api_instance = mock_custom_api_class.return_value
+    mock_custom_api_instance.create_namespaced_custom_object.return_value = (
+        SAMPLE_RESOURCE
+    )
+
+    base = BaseClient()
+    resource = base.create_custom_resource(
+        group="testgroup",
+        version="v1",
+        plural="tests",
+        body=SAMPLE_RESOURCE,
+    )
+
+    mock_custom_api_instance.create_namespaced_custom_object.assert_called_once()
+    assert isinstance(resource, K8sResource)
+    assert resource.name == "test-pod"
+
+
+@patch("kubeflow.core.base_client.client.CustomObjectsApi")
+@patch("kubeflow.core.base_client.KubeconfigAuthProvider")
+def test_delete_custom_resource(mock_auth_provider, mock_custom_api_class):
+    """Verify delete_custom_resource delegates correctly."""
+    mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+        client.Configuration()
+    )
+    mock_custom_api_instance = mock_custom_api_class.return_value
+    mock_custom_api_instance.delete_namespaced_custom_object.return_value = {
+        "status": "Success"
+    }
+
+    base = BaseClient()
+    response = base.delete_custom_resource(
+        group="testgroup",
+        version="v1",
+        plural="tests",
+        name="test-resource",
+    )
+
+    mock_custom_api_instance.delete_namespaced_custom_object.assert_called_once()
+    assert response == {"status": "Success"}
