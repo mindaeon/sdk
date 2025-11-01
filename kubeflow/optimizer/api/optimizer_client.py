@@ -16,7 +16,6 @@ import logging
 from typing import Any, Optional
 
 from kubeflow.common.types import KubernetesBackendConfig
-from kubeflow.core.exceptions import InvalidArgumentException, APIException
 from kubeflow.optimizer.backends.kubernetes.backend import KubernetesBackend
 from kubeflow.optimizer.types.algorithm_types import BaseAlgorithm
 from kubeflow.optimizer.types.optimization_types import Objective, OptimizationJob, TrialConfig
@@ -47,7 +46,7 @@ class OptimizerClient:
         if isinstance(backend_config, KubernetesBackendConfig):
             self.backend = KubernetesBackend(backend_config)
         else:
-            raise InvalidArgumentException(f"Invalid backend config '{backend_config}'")
+            raise ValueError(f"Invalid backend config '{backend_config}'")
 
     def optimize(
         self,
@@ -73,14 +72,12 @@ class OptimizerClient:
 
         Raises:
             ValueError: Input arguments are invalid.
-            APIException: If the API call fails.
+            TimeoutError: Timeout to create Experiment.
+            RuntimeError: Failed to create Experiment.
         """
-        try:
-            return self.backend.optimize(
-                trial_template=trial_template,
-                trial_config=trial_config,
-        except (TimeoutError, RuntimeError) as e:
-            raise APIException from e
+        return self.backend.optimize(
+            trial_template=trial_template,
+            trial_config=trial_config,
             objectives=objectives,
             search_space=search_space,
             algorithm=algorithm,
@@ -94,12 +91,11 @@ class OptimizerClient:
                 an empty list is returned.
 
         Raises:
-            APIException: If the API call fails.
+            TimeoutError: Timeout to list OptimizationJobs.
+            RuntimeError: Failed to list OptimizationJobs.
         """
-        try:
-            return self.backend.list_jobs()
-        except (TimeoutError, RuntimeError) as e:
-            raise APIException from e
+
+        return self.backend.list_jobs()
 
     def get_job(self, name: str) -> OptimizationJob:
         """Get the OptimizationJob object
@@ -111,12 +107,11 @@ class OptimizerClient:
             A OptimizationJob object.
 
         Raises:
-            APIException: If the API call fails.
+            TimeoutError: Timeout to get a OptimizationJob.
+            RuntimeError: Failed to get a OptimizationJob.
         """
-        try:
-            return self.backend.get_job(name=name)
-        except (TimeoutError, RuntimeError) as e:
-            raise APIException from e
+
+        return self.backend.get_job(name=name)
 
     def delete_job(self, name: str):
         """Delete the OptimizationJob.
@@ -125,9 +120,7 @@ class OptimizerClient:
             name: Name of the OptimizationJob.
 
         Raises:
-            APIException: If the API call fails.
+            TimeoutError: Timeout to delete OptimizationJob.
+            RuntimeError: Failed to delete OptimizationJob.
         """
-        try:
-            return self.backend.delete_job(name=name)
-        except (TimeoutError, RuntimeError) as e:
-            raise APIException from e
+        return self.backend.delete_job(name=name)
