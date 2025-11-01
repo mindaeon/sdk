@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class LocalRunner:
-    """A local runner for Kubeflow TrainJobs."""
+class KubeflowException(Exception):
+    """Base class for all Kubeflow SDK exceptions."""
+    pass
 
-    def __init__(self):
-        """Initializes the LocalRunner."""
-        pass
+class APIException(KubeflowException):
+    """Raised when an API call fails."""
+    pass
 
-    def run(self, train_job):
-        """Runs the TrainJob locally."""
-        pass
+class NotFoundException(APIException):
+    """Raised when a resource is not found."""
+    pass
+
+class InvalidArgumentException(KubeflowException):
+    """Raised when an invalid argument is passed to a function."""
+    pass
