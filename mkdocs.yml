@@ -3,3 +3,6 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - Kubeflow Pipelines: pipelines.md
+  - Kubeflow Trainer: trainer.md

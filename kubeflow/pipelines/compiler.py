@@ -1,4 +1,4 @@
-# Copyright 2025 The Kubeflow Authors.
+# Copyright 2024 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,12 +36,21 @@ class Compiler:
             pipeline_spec["pipeline_spec"]["components"][
                 component_spec.name
             ] = component_spec.model_dump()
-            pipeline_spec["pipeline_spec"]["root"]["dag"]["tasks"][
-                task["name"]
-            ] = {
+            task_spec = {
                 "caching_options": {"enable_cache": True},
                 "component_ref": {"name": component_spec.name},
                 "task_info": {"name": task["name"]},
             }
+            if task["arguments"]:
+                task_spec["inputs"] = {
+                    "parameters": {
+                        k: {"component_input_parameter": v}
+                        for k, v in task["arguments"].items()
+                    }
+                }
+
+            pipeline_spec["pipeline_spec"]["root"]["dag"]["tasks"][
+                task["name"]
+            ] = task_spec
 
         return yaml.dump(pipeline_spec)
