@@ -18,6 +18,8 @@ from typing import Dict, Any, Optional
 
 from pydantic import BaseModel
 
+from kubeflow.pipelines.types.error import Error
+
 
 class RunState(str, Enum):
     """The state of a pipeline run."""
@@ -30,6 +32,13 @@ class RunState(str, Enum):
     RUNNING = "RUNNING"
 
 
+class PipelineVersionReference(BaseModel):
+    """A reference to a pipeline version."""
+
+    pipeline_id: str
+    pipeline_version_id: str
+
+
 class Run(BaseModel):
     """A Kubeflow Pipeline Run."""
 
@@ -37,8 +46,13 @@ class Run(BaseModel):
     display_name: str
     created_at: datetime
     state: RunState
-    error: Optional[Dict[str, Any]] = None
-    pipeline_version_reference: Optional[Dict[str, Any]] = None
+    error: Optional[Error] = None
+    pipeline_version_reference: Optional[PipelineVersionReference] = None
+    experiment_id: Optional[str] = None
+    storage_state: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+    recurring_run_id: Optional[str] = None
 
 
 class RunDetails(Run):

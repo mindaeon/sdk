@@ -2,8 +2,7 @@
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
+# You may
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -17,6 +16,8 @@ from typing import Dict, Any, Optional
 
 from pydantic import BaseModel
 
+from kubeflow.pipelines.types.error import Error
+
 
 class PipelineSpec(BaseModel):
     """The specification of a Kubeflow Pipeline."""
@@ -24,13 +25,23 @@ class PipelineSpec(BaseModel):
     pipeline_manifest: Dict[str, Any]
 
 
+class Url(BaseModel):
+    """A URL."""
+
+    pipeline_url: str
+
+
 class PipelineVersion(BaseModel):
     """A version of a Kubeflow Pipeline."""
 
+    pipeline_id: str
     pipeline_version_id: str
     display_name: str
     created_at: datetime
     description: Optional[str] = None
+    package_url: Optional[Url] = None
+    code_source_url: Optional[str] = None
+    error: Optional[Error] = None
 
 
 class Pipeline(BaseModel):
@@ -38,6 +49,9 @@ class Pipeline(BaseModel):
 
     pipeline_id: str
     display_name: str
+    name: str
     created_at: datetime
     description: Optional[str] = None
     pipeline_spec: Optional[PipelineSpec] = None
+    namespace: Optional[str] = None
+    error: Optional[Error] = None

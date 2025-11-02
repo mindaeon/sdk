@@ -14,32 +14,77 @@
 
 import inspect
 from functools import wraps
-from typing import Callable
+from typing import Callable, List
 
-from kubeflow.pipelines.types.component_spec import ComponentSpec, InputSpec, OutputSpec
+from kubeflow.pipelines.types.component_spec import (
+    ComponentSpec,
+    InputSpec,
+    OutputSpec,
+    ContainerSpec,
+)
 
 
-def component(func: Callable):
+class Pipeline:
+    """A pipeline context."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.tasks = []
+
+    def __enter__(self):
+        Pipeline.active_pipeline = self
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        Pipeline.active_pipeline = None
+
+
+def component(
+    name: str,
+    image: str,
+    inputs: List[InputSpec] = None,
+    outputs: List[OutputSpec] = None,
+    command: List[str] = None,
+):
     """Decorator for pipeline components."""
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
+    def decorator(func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if Pipeline.active_pipeline:
+                task = {
+                    "name": name,
+                    "component_spec": wrapper.component_spec,
+                    "arguments": kwargs,
+                }
+                Pipeline.active_pipeline.tasks.append(task)
+            return func(*args, **kwargs)
 
-    sig = inspect.signature(func)
-    inputs = []
-    for param in sig.parameters.values():
-        inputs.append(InputSpec(name=param.name, type=str(param.annotation)))
+        wrapper.component_spec = ComponentSpec(
+            name=name,
+            description=func.__doc__,
+            inputs=inputs or [],
+            outputs=outputs or [],
+            implementation=ContainerSpec(
+                image=image,
+                command=command or [],
+            ),
+        )
+        return wrapper
 
-    outputs = []
-    if sig.return_annotation is not inspect.Signature.empty:
-        outputs.append(OutputSpec(name="output", type=str(sig.return_annotation)))
+    return decorator
 
-    wrapper.component_spec = ComponentSpec(
-        name=func.__name__,
-        description=func.__doc__,
-        inputs=inputs,
-        outputs=outputs,
-    )
 
-    return wrapper
+def pipeline(name: str):
+    """Decorator for pipelines."""
+
+    def decorator(func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with Pipeline(name) as p:
+                func(*args, **kwargs)
+            return p
+
+        return wrapper
+
+    return decorator

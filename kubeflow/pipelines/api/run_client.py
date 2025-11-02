@@ -14,11 +14,11 @@
 
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
-from kubeflow.pipelines.types.run_types import Run, RunState
+from kubeflow.pipelines.types.run_types import Run, RunState, PipelineVersionReference
 
 
 class RunClient(BaseClient):
@@ -29,12 +29,26 @@ class RunClient(BaseClient):
         super().__init__(config)
         self.api_version = "v2beta1"
 
-    def create_run(self, pipeline_id: str, run_name: str):
+    def create_run(
+        self,
+        run_name: str,
+        pipeline_version_reference: PipelineVersionReference,
+        runtime_config: Optional[Dict[str, Any]] = None,
+        experiment_id: Optional[str] = None,
+    ) -> Run:
         """Creates a pipeline run."""
-        body = {"display_name": run_name, "pipeline_version_reference": {"pipeline_id": pipeline_id}}
-        return self.api_client.call_api(
-            f"/apis/{self.api_version}/runs", "POST", body=body
+        body = {
+            "display_name": run_name,
+            "pipeline_version_reference": pipeline_version_reference.model_dump(),
+            "runtime_config": runtime_config or {},
+        }
+        params = {}
+        if experiment_id:
+            params["experiment_id"] = experiment_id
+        response = self.api_client.call_api(
+            f"/apis/{self.api_version}/runs", "POST", body=body, query_params=params
         )
+        return Run(**response)
 
     def get_run(self, run_id: str) -> Run:
         """Gets a pipeline run."""
@@ -43,14 +57,39 @@ class RunClient(BaseClient):
         )
         return Run(**response)
 
-    def list_runs(self):
+    def list_runs(self) -> list[Run]:
         """Lists pipeline runs."""
-        return self.api_client.call_api(f"/apis/{self.api_version}/runs", "GET")
+        response = self.api_client.call_api(f"/apis/{self.api_version}/runs", "GET")
+        return [Run(**run) for run in response.get("runs", [])]
 
     def delete_run(self, run_id: str):
         """Deletes a pipeline run."""
         return self.api_client.call_api(
             f"/apis/{self.api_version}/runs/{run_id}", "DELETE"
+        )
+
+    def archive_run(self, run_id: str):
+        """Archives a pipeline run."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/runs/{run_id}:archive", "POST"
+        )
+
+    def unarchive_run(self, run_id: str):
+        """Unarchives a pipeline run."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/runs/{run_id}:unarchive", "POST"
+        )
+
+    def retry_run(self, run_id: str):
+        """Retries a pipeline run."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/runs/{run_id}:retry", "POST"
+        )
+
+    def terminate_run(self, run_id: str):
+        """Terminates a pipeline run."""
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/runs/{run_id}:terminate", "POST"
         )
 
     def wait_for_run_completion(self, run_id: str, timeout: int = 600) -> Run:

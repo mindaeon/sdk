@@ -13,9 +13,17 @@
 # limitations under the License.
 
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel
+
+
+class ExperimentStorageState(str, Enum):
+    """The storage state of an experiment."""
+
+    AVAILABLE = "AVAILABLE"
+    ARCHIVED = "ARCHIVED"
 
 
 class Experiment(BaseModel):
@@ -25,3 +33,6 @@ class Experiment(BaseModel):
     display_name: str
     created_at: datetime
     description: Optional[str] = None
+    namespace: Optional[str] = None
+    storage_state: Optional[ExperimentStorageState] = None
+    last_run_created_at: Optional[datetime] = None

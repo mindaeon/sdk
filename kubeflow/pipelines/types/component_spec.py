@@ -33,6 +33,14 @@ class OutputSpec(BaseModel):
     description: Optional[str] = None
 
 
+class ContainerSpec(BaseModel):
+    """Specification for a container implementation."""
+
+    image: str
+    command: List[str] = []
+    args: List[str] = []
+
+
 class ComponentSpec(BaseModel):
     """Specification for a pipeline component."""
 
@@ -40,3 +48,4 @@ class ComponentSpec(BaseModel):
     description: Optional[str] = None
     inputs: List[InputSpec] = []
     outputs: List[OutputSpec] = []
+    implementation: Optional[ContainerSpec] = None
