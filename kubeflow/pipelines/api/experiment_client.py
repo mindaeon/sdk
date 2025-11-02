@@ -16,7 +16,6 @@ from typing import Optional
 
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
-from kubeflow.pipelines.types.experiment_types import Experiment
 
 
 class ExperimentClient(BaseClient):
@@ -27,50 +26,23 @@ class ExperimentClient(BaseClient):
         super().__init__(config)
         self.api_version = "v2beta1"
 
-    def create_experiment(
-        self,
-        experiment_name: str,
-        description: Optional[str] = None,
-        namespace: Optional[str] = None,
-    ) -> Experiment:
+    def create_experiment(self, experiment_name: str):
         """Creates a pipeline experiment."""
-        body = {"display_name": experiment_name, "description": description}
-        params = {}
-        if namespace:
-            params["namespace"] = namespace
-        response = self.api_client.call_api(
-            f"/apis/{self.api_version}/experiments", "POST", body=body, query_params=params
-        )
-        return Experiment(**response)
+        body = {"display_name": experiment_name}
+        return self.api_client.call_api(f"/apis/{self.api_version}/experiments", "POST", body=body)
 
-    def get_experiment(self, experiment_id: str) -> Experiment:
+    def get_experiment(self, experiment_id: str):
         """Gets a pipeline experiment."""
-        response = self.api_client.call_api(
+        return self.api_client.call_api(
             f"/apis/{self.api_version}/experiments/{experiment_id}", "GET"
         )
-        return Experiment(**response)
 
-    def list_experiments(self) -> list[Experiment]:
+    def list_experiments(self):
         """Lists pipeline experiments."""
-        response = self.api_client.call_api(
-            f"/apis/{self.api_version}/experiments", "GET"
-        )
-        return [Experiment(**exp) for exp in response.get("experiments", [])]
+        return self.api_client.call_api(f"/apis/{self.api_version}/experiments", "GET")
 
     def delete_experiment(self, experiment_id: str):
         """Deletes a pipeline experiment."""
         return self.api_client.call_api(
             f"/apis/{self.api_version}/experiments/{experiment_id}", "DELETE"
-        )
-
-    def archive_experiment(self, experiment_id: str):
-        """Archives a pipeline experiment."""
-        return self.api_client.call_api(
-            f"/apis/{self.api_version}/experiments/{experiment_id}:archive", "POST"
-        )
-
-    def unarchive_experiment(self, experiment_id: str):
-        """Unarchives a pipeline experiment."""
-        return self.api_client.call_api(
-            f"/apis/{self.api_version}/experiments/{experiment_id}:unarchive", "POST"
         )

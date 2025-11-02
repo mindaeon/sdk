@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class KubeflowException(Exception):
+
+class KubeflowError(Exception):
     """Base class for all Kubeflow SDK exceptions."""
+
     pass
 
-class APIException(KubeflowException):
+
+class APIError(KubeflowError):
     """Raised when an API call fails."""
+
     pass
 
-class NotFoundException(APIException):
+
+class NotFoundError(APIError):
     """Raised when a resource is not found."""
+
     pass
 
-class InvalidArgumentException(KubeflowException):
+
+class InvalidArgumentError(KubeflowError):
     """Raised when an invalid argument is passed to a function."""
+
     pass

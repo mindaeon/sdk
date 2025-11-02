@@ -12,120 +12,119 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
+from unittest.mock import MagicMock, mock_open, patch
 
+from kubernetes import client
+import pytest
+
+from kubeflow.core.config import KubeflowConfig
 from kubeflow.pipelines.api.pipeline_client import PipelineClient
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_create_pipeline(mock_auth_provider, mock_k8s_client):
-    """Tests creating a pipeline."""
-    client = PipelineClient()
-    client.api_client.call_api.return_value = {
-        "pipeline_id": "test-pipeline",
-        "display_name": "test-pipeline",
-        "name": "test-pipeline",
-        "created_at": "2025-01-01T00:00:00Z",
-    }
-    client.create_pipeline("test-pipeline")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines",
-        "POST",
-        body={"display_name": "test-pipeline", "description": None},
-        query_params={},
-    )
+@pytest.fixture
+def fake_config():
+    """Returns a fake KubeflowConfig object."""
+    cfg = KubeflowConfig()
+    cfg.auth.provider = "kubeconfig"
+    return cfg
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_create_pipeline_version(mock_auth_provider, mock_k8s_client):
-    """Tests creating a pipeline version."""
-    client = PipelineClient()
-    client.api_client.call_api.return_value = {
-        "pipeline_id": "test-pipeline",
-        "pipeline_version_id": "test-version",
-        "display_name": "test-version",
-        "created_at": "2025-01-01T00:00:00Z",
-    }
-    client.create_pipeline_version(
-        "test-pipeline", "test-version", "http://example.com"
-    )
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines/test-pipeline/versions",
-        "POST",
-        body={
-            "display_name": "test-version",
-            "package_url": {"pipeline_url": "http://example.com"},
-            "description": None,
-        },
-    )
+def test_create_pipeline(fake_config):
+    """Tests the create_pipeline method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("builtins.open", mock_open(read_data=b"test-data")),
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+
+        pipeline_client = PipelineClient(config=fake_config)
+        pipeline_client.create_pipeline("test-pipeline", "test.zip")
+
+        pipeline_client.api_client.call_api.assert_called_with(
+            "/apis/v2beta1/pipelines/upload",
+            "POST",
+            query_params=[("name", "test-pipeline")],
+            body=b"test-data",
+            header_params={"Content-Type": "application/zip"},
+            _preload_content=False,
+        )
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_get_pipeline(mock_auth_provider, mock_k8s_client):
-    """Tests getting a pipeline."""
-    client = PipelineClient()
-    client.api_client.call_api.return_value = {
-        "pipeline_id": "test-pipeline",
-        "display_name": "test-pipeline",
-        "name": "test-pipeline",
-        "created_at": "2025-01-01T00:00:00Z",
-    }
-    client.get_pipeline("test-pipeline")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines/test-pipeline", "GET"
-    )
+def test_get_pipeline(fake_config):
+    """Tests the get_pipeline method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        pipeline_client = PipelineClient(config=fake_config)
+        pipeline_client.get_pipeline("test-pipeline-id")
+
+        pipeline_client.api_client.call_api.assert_called_with(
+            "/apis/v2beta1/pipelines/test-pipeline-id", "GET"
+        )
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_list_pipelines(mock_auth_provider, mock_k8s_client):
-    """Tests listing pipelines."""
-    client = PipelineClient()
-    client.api_client.call_api.return_value = {"pipelines": []}
-    client.list_pipelines()
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines", "GET"
-    )
+def test_list_pipelines(fake_config):
+    """Tests the list_pipelines method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        pipeline_client = PipelineClient(config=fake_config)
+        pipeline_client.list_pipelines()
+
+        pipeline_client.api_client.call_api.assert_called_with("/apis/v2beta1/pipelines", "GET")
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_delete_pipeline(mock_auth_provider, mock_k8s_client):
-    """Tests deleting a pipeline."""
-    client = PipelineClient()
-    client.delete_pipeline("test-pipeline")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines/test-pipeline", "DELETE"
-    )
+def test_delete_pipeline(fake_config):
+    """Tests the delete_pipeline method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        pipeline_client = PipelineClient(config=fake_config)
+        pipeline_client.delete_pipeline("test-pipeline-id")
+
+        pipeline_client.api_client.call_api.assert_called_with(
+            "/apis/v2beta1/pipelines/test-pipeline-id", "DELETE"
+        )
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_get_pipeline_version(mock_auth_provider, mock_k8s_client):
-    """Tests getting a pipeline version."""
-    client = PipelineClient()
-    client.api_client.call_api.return_value = {
-        "pipeline_id": "test-pipeline",
-        "pipeline_version_id": "test-version",
-        "display_name": "test-version",
-        "created_at": "2025-01-01T00:00:00Z",
-    }
-    client.get_pipeline_version("test-pipeline", "test-version")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines/test-pipeline/versions/test-version", "GET"
-    )
+def test_get_pipeline_by_name(fake_config):
+    """Tests the get_pipeline_by_name method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock(
+            return_value={
+                "pipelines": [
+                    {"pipeline_id": "1", "display_name": "pipeline-1"},
+                    {"pipeline_id": "2", "display_name": "pipeline-2"},
+                ]
+            }
+        )
+        pipeline_client = PipelineClient(config=fake_config)
+        pipeline_client.get_pipeline_by_name("pipeline-2")
 
-
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_list_pipeline_versions(mock_auth_provider, mock_k8s_client):
-    """Tests listing pipeline versions."""
-    client = PipelineClient()
-    client.api_client.call_api.return_value = {"pipeline_versions": []}
-    client.list_pipeline_versions("test-pipeline")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/pipelines/test-pipeline/versions", "GET"
-    )
+        pipeline_client.api_client.call_api.assert_any_call("/apis/v2beta1/pipelines", "GET")
+        pipeline_client.api_client.call_api.assert_called_with("/apis/v2beta1/pipelines/2", "GET")

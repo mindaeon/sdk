@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+from typing import Any, Optional
+
+from pydantic import BaseModel
 
 
-def configure_logger(name: str) -> logging.Logger:
-    """Configures a logger with a consistent format."""
-    logger = logging.getLogger(name)
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    return logger
+class Notebook(BaseModel):
+    """A Pydantic model for a Kubeflow Notebook.
+
+    This model is used to represent a Notebook as a Python object.
+    """
+
+    name: str
+    namespace: Optional[str] = None
+    spec: Optional[dict[str, Any]] = None

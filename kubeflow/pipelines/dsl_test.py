@@ -1,4 +1,4 @@
-# Copyright 2024 The Kubeflow Authors.
+# Copyright 2025 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,32 +13,53 @@
 # limitations under the License.
 
 from kubeflow.pipelines import dsl
-from kubeflow.pipelines.types.component_spec import InputSpec
 
 
 def test_component_decorator():
     """Tests the @dsl.component decorator."""
 
-    @dsl.component(
-        name="test-component",
-        image="test-image",
-        inputs=[InputSpec(name="test-input", type="String")],
-    )
-    def my_component(test_input: str):
-        pass
+    @dsl.component
+    def my_component(a: int, b: str) -> str:
+        """My component."""
+        return f"{b} {a}"
 
-    assert my_component.component_spec.name == "test-component"
-    assert my_component.component_spec.implementation.image == "test-image"
-    assert len(my_component.component_spec.inputs) == 1
-    assert my_component.component_spec.inputs[0].name == "test-input"
+    assert my_component.component_spec.name == "my_component"
+    assert my_component.component_spec.description == "My component."
+    assert len(my_component.component_spec.inputs) == 2
+    assert my_component.component_spec.inputs[0].name == "a"
+    assert my_component.component_spec.inputs[0].type == "<class 'int'>"
+    assert my_component.component_spec.inputs[1].name == "b"
+    assert my_component.component_spec.inputs[1].type == "<class 'str'>"
+    assert len(my_component.component_spec.outputs) == 1
+    assert my_component.component_spec.outputs[0].name == "output"
+    assert my_component.component_spec.outputs[0].type == "<class 'str'>"
 
 
-def test_pipeline_decorator():
-    """Tests the @dsl.pipeline decorator."""
+def test_component_decorator_no_inputs_no_outputs():
+    """Tests the @dsl.component decorator with no inputs and no outputs."""
 
-    @dsl.pipeline(name="test-pipeline")
-    def my_pipeline():
-        pass
+    @dsl.component
+    def my_component():
+        """My component."""
+        print("hello")
 
-    pipeline = my_pipeline()
-    assert pipeline.name == "test-pipeline"
+    assert my_component.component_spec.name == "my_component"
+    assert my_component.component_spec.description == "My component."
+    assert len(my_component.component_spec.inputs) == 0
+    assert len(my_component.component_spec.outputs) == 0
+
+
+def test_component_decorator_no_inputs_with_output():
+    """Tests the @dsl.component decorator with no inputs and with an output."""
+
+    @dsl.component
+    def my_component() -> str:
+        """My component."""
+        return "hello"
+
+    assert my_component.component_spec.name == "my_component"
+    assert my_component.component_spec.description == "My component."
+    assert len(my_component.component_spec.inputs) == 0
+    assert len(my_component.component_spec.outputs) == 1
+    assert my_component.component_spec.outputs[0].name == "output"
+    assert my_component.component_spec.outputs[0].type == "<class 'str'>"

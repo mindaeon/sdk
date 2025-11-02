@@ -77,34 +77,9 @@ print("\n".join(TrainerClient().get_job_logs(name=job_id)))
 | --------------------------- | ---------------- | --------------- | -------------------------------------------------------------------- |
 | **Kubeflow Trainer**        | ✅ **Available** | v2.0.0+         | Train and fine-tune AI models with various frameworks                |
 | **Kubeflow Katib**          | 🚧 Planned       | TBD             | Hyperparameter optimization                                          |
-| **Kubeflow Pipelines**      | ✅ **Available** | v2.0.0+         | Build, run, and track AI workflows                                   |
+| **Kubeflow Pipelines**      | 🚧 Planned       | TBD             | Build, run, and track AI workflows                                   |
 | **Kubeflow Model Registry** | 🚧 Planned       | TBD             | Manage model artifacts, versions and ML artifacts metadata           |
 | **Kubeflow Spark Operator** | 🚧 Planned       | TBD             | Manage Spark applications for data processing and feature engineering |
-
-### Run your first Kubeflow Pipeline
-
-The Kubeflow Pipelines integration allows you to define and run your ML workflows using a Python-native DSL.
-
-```python
-from kubeflow.pipelines.dsl import component, pipeline
-
-@component(
-    name="say-hello",
-    image="alpine:latest",
-    command=["echo", "hello"],
-)
-def say_hello():
-    """A simple component that prints a greeting."""
-    print("Hello, world!")
-
-
-@pipeline(name="hello-world")
-def hello_world_pipeline():
-    """A simple pipeline that greets the user."""
-    say_hello()
-```
-
-For a more detailed example, see the [hello_world.py](examples/hello_world.py) script.
 
 ## Community
 

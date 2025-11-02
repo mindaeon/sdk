@@ -12,121 +12,188 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
+from unittest.mock import MagicMock, patch
 
+from kubernetes import client
+import pytest
+
+from kubeflow.core.config import KubeflowConfig
 from kubeflow.pipelines.api.run_client import RunClient
-from kubeflow.pipelines.types.run_types import PipelineVersionReference
+from kubeflow.pipelines.types.run_types import Run, RunState
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_create_run(mock_auth_provider, mock_k8s_client):
-    """Tests creating a run."""
-    client = RunClient()
-    client.api_client.call_api.return_value = {
-        "run_id": "test-run",
-        "display_name": "test-run",
-        "created_at": "2025-01-01T00:00:00Z",
-        "state": "PENDING",
-    }
-    client.create_run(
-        "test-run",
-        PipelineVersionReference(
-            pipeline_id="test-pipeline", pipeline_version_id="test-version"
-        ),
-    )
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs",
-        "POST",
-        body={
-            "display_name": "test-run",
-            "pipeline_version_reference": {
-                "pipeline_id": "test-pipeline",
-                "pipeline_version_id": "test-version",
+@pytest.fixture
+def fake_config():
+    """Returns a fake KubeflowConfig object."""
+    cfg = KubeflowConfig()
+    cfg.auth.provider = "kubeconfig"
+    return cfg
+
+
+def test_create_run(fake_config):
+    """Tests the create_run method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+
+        run_client = RunClient(config=fake_config)
+        run_client.create_run("test-pipeline-id", "test-run")
+
+        run_client.api_client.call_api.assert_called_with(
+            "/apis/v2beta1/runs",
+            "POST",
+            body={
+                "display_name": "test-run",
+                "pipeline_version_reference": {"pipeline_id": "test-pipeline-id"},
             },
-            "runtime_config": {},
-        },
-        query_params={},
-    )
+        )
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_get_run(mock_auth_provider, mock_k8s_client):
-    """Tests getting a run."""
-    client = RunClient()
-    client.api_client.call_api.return_value = {
-        "run_id": "test-run",
-        "display_name": "test-run",
-        "created_at": "2025-01-01T00:00:00Z",
-        "state": "SUCCEEDED",
-    }
-    client.get_run("test-run")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs/test-run", "GET"
-    )
+def test_get_run(fake_config):
+    """Tests the get_run method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock(
+            return_value={
+                "run_id": "test-run-id",
+                "display_name": "test-run",
+                "created_at": "2025-01-01T00:00:00Z",
+                "state": "RUNNING",
+            }
+        )
+        run_client = RunClient(config=fake_config)
+        run_client.get_run("test-run-id")
+
+        run_client.api_client.call_api.assert_called_with("/apis/v2beta1/runs/test-run-id", "GET")
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_list_runs(mock_auth_provider, mock_k8s_client):
-    """Tests listing runs."""
-    client = RunClient()
-    client.api_client.call_api.return_value = {"runs": []}
-    client.list_runs()
-    client.api_client.call_api.assert_called_with("/apis/v2beta1/runs", "GET")
+def test_list_runs(fake_config):
+    """Tests the list_runs method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.list_runs()
+
+        run_client.api_client.call_api.assert_called_with("/apis/v2beta1/runs", "GET")
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_delete_run(mock_auth_provider, mock_k8s_client):
-    """Tests deleting a run."""
-    client = RunClient()
-    client.delete_run("test-run")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs/test-run", "DELETE"
-    )
+def test_delete_run(fake_config):
+    """Tests the delete_run method."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.delete_run("test-run-id")
+
+        run_client.api_client.call_api.assert_called_with(
+            "/apis/v2beta1/runs/test-run-id", "DELETE"
+        )
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_archive_run(mock_auth_provider, mock_k8s_client):
-    """Tests archiving a run."""
-    client = RunClient()
-    client.archive_run("test-run")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs/test-run:archive", "POST"
-    )
+def test_wait_for_run_completion_success(fake_config):
+    """Tests the wait_for_run_completion method for a successful run."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+        patch("time.sleep"),
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.get_run = MagicMock(
+            side_effect=[
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.RUNNING,
+                ),
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.SUCCEEDED,
+                ),
+            ]
+        )
+        run = run_client.wait_for_run_completion("test-run-id")
+        assert run.state == RunState.SUCCEEDED
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_unarchive_run(mock_auth_provider, mock_k8s_client):
-    """Tests unarchiving a run."""
-    client = RunClient()
-    client.unarchive_run("test-run")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs/test-run:unarchive", "POST"
-    )
+def test_wait_for_run_completion_failure(fake_config):
+    """Tests the wait_for_run_completion method for a failed run."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+        patch("time.sleep"),
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.get_run = MagicMock(
+            side_effect=[
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.RUNNING,
+                ),
+                Run(
+                    run_id="test-run-id",
+                    display_name="test-run",
+                    created_at="2025-01-01T00:00:00Z",
+                    state=RunState.FAILED,
+                ),
+            ]
+        )
+        run = run_client.wait_for_run_completion("test-run-id")
+        assert run.state == RunState.FAILED
 
 
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_retry_run(mock_auth_provider, mock_k8s_client):
-    """Tests retrying a run."""
-    client = RunClient()
-    client.retry_run("test-run")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs/test-run:retry", "POST"
-    )
-
-
-@mock.patch("kubeflow.core.base_client.client")
-@mock.patch("kubeflow.core.base_client.KubeconfigAuthProvider")
-def test_terminate_run(mock_auth_provider, mock_k8s_client):
-    """Tests terminating a run."""
-    client = RunClient()
-    client.terminate_run("test-run")
-    client.api_client.call_api.assert_called_with(
-        "/apis/v2beta1/runs/test-run:terminate", "POST"
-    )
+def test_wait_for_run_completion_timeout(fake_config):
+    """Tests the wait_for_run_completion method for a timeout."""
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+        patch("time.sleep"),
+    ):
+        mock_auth_provider.return_value.get_api_client_configuration.return_value = (
+            client.Configuration()
+        )
+        mock_api_client.return_value.call_api = MagicMock()
+        run_client = RunClient(config=fake_config)
+        run_client.get_run = MagicMock(
+            return_value=Run(
+                run_id="test-run-id",
+                display_name="test-run",
+                created_at="2025-01-01T00:00:00Z",
+                state=RunState.RUNNING,
+            )
+        )
+        with pytest.raises(TimeoutError):
+            run_client.wait_for_run_completion("test-run-id", timeout=1)

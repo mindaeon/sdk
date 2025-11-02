@@ -11,14 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Dict, Any
 
-from pydantic import BaseModel
+from kubeflow.notebooks.api import NotebookClient
+from kubeflow.notebooks.models import Notebook
+from kubeflow.notebooks.templates import JUPYTER_TEMPLATE
 
+if __name__ == "__main__":
+    # Create a NotebookClient
+    client = NotebookClient()
 
-class Error(BaseModel):
-    """An error."""
+    # Create a Notebook
+    notebook = Notebook(name="my-notebook", spec={"template": JUPYTER_TEMPLATE.template})
+    client.create(notebook)
 
-    code: int
-    message: str
-    details: List[Dict[str, Any]]
+    # Get the Notebook
+    notebook = client.get("my-notebook")
+    print(notebook)
+
+    # Delete the Notebook
+    client.delete("my-notebook")

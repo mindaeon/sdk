@@ -1,4 +1,4 @@
-# Copyright 2025 The Kubeflow Authors.
+# Copyright 2024 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,128 +12,180 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
-from kubernetes import client
-from kubeflow.core.k8s_resource import K8sResource
-from kubeflow.optimizer.api.optimizer_client import OptimizerClient
-from kubeflow.optimizer.types.optimization_types import Search
-from kubeflow.trainer.types.types import CustomTrainer, TrainJobTemplate
-from kubeflow.core.config import KubeflowConfig
 
-# A sample Katib Experiment for testing
-SAMPLE_EXPERIMENT = {
-    "apiVersion": "kubeflow.org/v1beta1",
-    "kind": "Experiment",
-    "metadata": {"name": "test-experiment", "namespace": "default"},
-    "spec": {
-        "parameters": [
+from kubeflow.katib import (
+    V1beta1AlgorithmSpec,
+    V1beta1ExperimentSpec,
+    V1beta1FeasibleSpace,
+    V1beta1ObjectiveSpec,
+    V1beta1ParameterSpec,
+)
+from kubeflow.optimizer import Optimizer, OptimizerClient, SearchSpace
+
+# TODO(Bobgy): test the real API server instead of mocking the client.
+
+
+def test_create_optimizer():
+    search_space = SearchSpace(
+        [
             {
                 "name": "learning_rate",
-                "parameterType": "double",
-                "feasibleSpace": {"min": "0.01", "max": "0.03"},
-            }
-        ],
-        "objective": {
+                "type": "double",
+                "space": {"min": "0.1", "max": "0.5", "step": "0.1"},
+            },
+            {
+                "name": "num_layers",
+                "type": "int",
+                "space": {"min": "2", "max": "10", "step": "1"},
+            },
+            {
+                "name": "optimizer",
+                "type": "categorical",
+                "space": {"values": ["adam", "sgd"]},
+            },
+            {
+                "name": "learning_rate2",
+                "type": "discrete",
+                "space": {"values": ["0.1", "0.3", "0.5"]},
+            },
+        ]
+    )
+    optimizer = Optimizer(
+        name="my-optimizer",
+        search_space=search_space,
+        objective={
             "type": "maximize",
-            "objectiveMetricName": "accuracy",
+            "goal": 0.99,
         },
-        "algorithm": {"algorithmName": "random"},
-    },
-}
-
-
-@pytest.fixture
-def fake_config():
-    cfg = KubeflowConfig()
-    return cfg
-
-
-def test_optimizer_client_optimize(fake_config):
-    """Tests the optimize method."""
-    fake_config.auth.provider = "kubeconfig"
-    fake_conf = client.Configuration()
-
-    def dummy_func():
-        pass
-
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.optimizer.api.optimizer_client.TrainerClient"
-    ) as mock_trainer_client:
-        mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
-        mock_trainer_client.return_value.get_runtime.return_value = MagicMock()
-        optimizer_client = OptimizerClient(fake_config)
-        optimizer_client.create_custom_resource = MagicMock()
-        trainer = CustomTrainer(func=dummy_func)
-        optimizer_client.optimize(
-            trial_template=TrainJobTemplate(trainer=trainer),
-            search_space={"learning_rate": Search.uniform(0.1, 0.2)},
-        )
-        optimizer_client.create_custom_resource.assert_called_once()
-
-
-def test_optimizer_client_get_job(fake_config):
-    """Tests the get_job method."""
-    fake_config.auth.provider = "kubeconfig"
-    fake_conf = client.Configuration()
-
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
-        mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
-        optimizer_client = OptimizerClient(fake_config)
-        optimizer_client.get_custom_resource = MagicMock(
-            return_value=K8sResource(**SAMPLE_EXPERIMENT)
-        )
-        job = optimizer_client.get_job("test-experiment")
-        assert job.name == "test-experiment"
-        assert "learning_rate" in job.search_space
-
-
-def test_optimizer_client_list_jobs(fake_config):
-    """Tests the list_jobs method."""
-    fake_config.auth.provider = "kubeconfig"
-    fake_conf = client.Configuration()
-
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
-        mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
-        optimizer_client = OptimizerClient(fake_config)
-        optimizer_client.list_custom_resources = MagicMock(
-            return_value=[K8sResource(**SAMPLE_EXPERIMENT)]
-        )
-        jobs = optimizer_client.list_jobs()
-        assert len(jobs) == 1
-        assert jobs[0].name == "test-experiment"
-
-
-def test_optimizer_client_delete_job(fake_config):
-    """Tests the delete_job method."""
-    fake_config.auth.provider = "kubeconfig"
-    fake_conf = client.Configuration()
-
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
-        mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
-        optimizer_client = OptimizerClient(fake_config)
-        optimizer_client.delete_custom_resource = MagicMock()
-        optimizer_client.delete_job("test-experiment")
-        optimizer_client.delete_custom_resource.assert_called_once_with(
+        algorithm={"name": "random", "settings": {"random_state": "10"}},
+    )
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider"),
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
+        client = OptimizerClient()
+        client.create(optimizer=optimizer, namespace="my-namespace")
+        mock_custom_api.return_value.create_namespaced_custom_object.assert_called_with(
+            body={
+                "apiVersion": "kubeflow.org/v1beta1",
+                "kind": "Experiment",
+                "metadata": {
+                    "name": "my-optimizer",
+                    "namespace": "my-namespace",
+                },
+                "spec": V1beta1ExperimentSpec(
+                    objective=V1beta1ObjectiveSpec(
+                        type="maximize",
+                        goal=0.99,
+                    ),
+                    algorithm=V1beta1AlgorithmSpec(
+                        algorithm_name="random",
+                        algorithm_settings=[
+                            {"name": "random_state", "value": "10"},
+                        ],
+                    ),
+                    parameters=[
+                        V1beta1ParameterSpec(
+                            name="learning_rate",
+                            parameter_type="double",
+                            feasible_space=V1beta1FeasibleSpace(min="0.1", max="0.5", step="0.1"),
+                        ),
+                        V1beta1ParameterSpec(
+                            name="num_layers",
+                            parameter_type="int",
+                            feasible_space=V1beta1FeasibleSpace(min="2", max="10", step="1"),
+                        ),
+                        V1beta1ParameterSpec(
+                            name="optimizer",
+                            parameter_type="categorical",
+                            feasible_space=V1beta1FeasibleSpace(list=["adam", "sgd"]),
+                        ),
+                        V1beta1ParameterSpec(
+                            name="learning_rate2",
+                            parameter_type="discrete",
+                            feasible_space=V1beta1FeasibleSpace(list=["0.1", "0.3", "0.5"]),
+                        ),
+                    ],
+                ).to_dict(),
+            },
             group="kubeflow.org",
-            version="v1beta1",
+            namespace="my-namespace",
             plural="experiments",
-            name="test-experiment",
+            version="v1beta1",
         )
+
+
+def test_delete_optimizer():
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider"),
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
+        client = OptimizerClient()
+        client.delete(name="my-optimizer", namespace="my-namespace")
+        mock_custom_api.return_value.delete_namespaced_custom_object.assert_called_with(
+            name="my-optimizer",
+            group="kubeflow.org",
+            namespace="my-namespace",
+            plural="experiments",
+            version="v1beta1",
+        )
+
+
+@pytest.mark.parametrize(
+    "backend_config, expected",
+    [
+        (
+            {"backend": "kubernetes"},
+            "The optimizer `my-optimizer` in `my-namespace` has been created.",
+        ),
+        (
+            {"backend": "google-cloud"},
+            "The optimizer `my-optimizer` in `my-namespace` has been created on Google Cloud.",
+        ),
+        (
+            {"backend": "google-cloud", "project": "my-project"},
+            (
+                "The optimizer `my-optimizer` in `my-namespace` has been created on "
+                "Google Cloud in project `my-project`."
+            ),
+        ),
+        (
+            {
+                "backend": "google-cloud",
+                "project": "my-project",
+                "region": "my-region",
+            },
+            (
+                "The optimizer `my-optimizer` in `my-namespace` has been created on "
+                "Google Cloud in project `my-project` region `my-region`."
+            ),
+        ),
+    ],
+)
+def test_backend_config_message(backend_config, expected):
+    search_space = SearchSpace(
+        [
+            {
+                "name": "learning_rate",
+                "type": "double",
+                "space": {"min": "0.1", "max": "0.5", "step": "0.1"},
+            }
+        ]
+    )
+    optimizer = Optimizer(
+        name="my-optimizer",
+        search_space=search_space,
+    )
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider"),
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi"),
+    ):
+        client = OptimizerClient(backend_config=backend_config)
+        actual = client.create(optimizer=optimizer, namespace="my-namespace")
+        assert actual == expected

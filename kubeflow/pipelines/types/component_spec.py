@@ -1,4 +1,4 @@
-# Copyright 2025 The Kubeflow Authors.
+# Copyright 2024 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
 
 class InputSpec(BaseModel):
-    """Specification for a component input."""
+    """The specification of a component input."""
 
     name: str
     type: str
@@ -26,26 +26,17 @@ class InputSpec(BaseModel):
 
 
 class OutputSpec(BaseModel):
-    """Specification for a component output."""
+    """The specification of a component output."""
 
     name: str
     type: str
     description: Optional[str] = None
 
 
-class ContainerSpec(BaseModel):
-    """Specification for a container implementation."""
-
-    image: str
-    command: List[str] = []
-    args: List[str] = []
-
-
 class ComponentSpec(BaseModel):
-    """Specification for a pipeline component."""
+    """The specification of a component."""
 
     name: str
     description: Optional[str] = None
-    inputs: List[InputSpec] = []
-    outputs: List[OutputSpec] = []
-    implementation: Optional[ContainerSpec] = None
+    inputs: list[InputSpec] = []
+    outputs: list[OutputSpec] = []

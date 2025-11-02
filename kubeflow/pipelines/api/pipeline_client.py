@@ -16,7 +16,6 @@ from typing import Optional
 
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
-from kubeflow.pipelines.types.pipeline_types import Pipeline, PipelineVersion
 
 
 class PipelineClient(BaseClient):
@@ -27,85 +26,53 @@ class PipelineClient(BaseClient):
         super().__init__(config)
         self.api_version = "v2beta1"
 
-    def create_pipeline(
-        self,
-        pipeline_name: str,
-        description: Optional[str] = None,
-        namespace: Optional[str] = None,
-    ) -> Pipeline:
+    def create_pipeline(self, pipeline_name: str, pipeline_package_path: str):
         """Creates a pipeline."""
-        body = {"display_name": pipeline_name, "description": description}
-        params = {}
-        if namespace:
-            params["namespace"] = namespace
-        response = self.api_client.call_api(
-            f"/apis/{self.api_version}/pipelines", "POST", body=body, query_params=params
-        )
-        return Pipeline(**response)
+        with open(pipeline_package_path, "rb") as f:
+            pipeline_package = f.read()
 
-    def create_pipeline_version(
-        self,
-        pipeline_id: str,
-        pipeline_version_name: str,
-        package_url: str,
-        description: Optional[str] = None,
-    ) -> PipelineVersion:
-        """Creates a pipeline version."""
-        body = {
-            "display_name": pipeline_version_name,
-            "package_url": {"pipeline_url": package_url},
-            "description": description,
-        }
         response = self.api_client.call_api(
-            f"/apis/{self.api_version}/pipelines/{pipeline_id}/versions",
+            f"/apis/{self.api_version}/pipelines/upload",
             "POST",
-            body=body,
+            query_params=[("name", pipeline_name)],
+            body=pipeline_package,
+            header_params={"Content-Type": "application/zip"},
+            _preload_content=False,
         )
-        return PipelineVersion(**response)
+        return response
 
-    def get_pipeline(self, pipeline_id: str) -> Pipeline:
-        """Gets a pipeline."""
+    def create_pipeline_version(self, pipeline_id: str, pipeline_package_path: str):
+        """Creates a pipeline version."""
+        with open(pipeline_package_path, "rb") as f:
+            pipeline_package = f.read()
+
         response = self.api_client.call_api(
-            f"/apis/{self.api_version}/pipelines/{pipeline_id}", "GET"
+            f"/apis/{self.api_version}/pipelines/{pipeline_id}/versions/upload",
+            "POST",
+            body=pipeline_package,
+            header_params={"Content-Type": "application/zip"},
+            _preload_content=False,
         )
-        return Pipeline(**response)
+        return response
 
-    def get_pipeline_by_name(self, pipeline_name: str) -> Optional[Pipeline]:
+    def get_pipeline(self, pipeline_id: str):
+        """Gets a pipeline."""
+        return self.api_client.call_api(f"/apis/{self.api_version}/pipelines/{pipeline_id}", "GET")
+
+    def get_pipeline_by_name(self, pipeline_name: str):
         """Gets a pipeline by name."""
         pipelines = self.list_pipelines()
-        for pipeline in pipelines:
-            if pipeline.display_name == pipeline_name:
-                return self.get_pipeline(pipeline.pipeline_id)
+        for pipeline in pipelines["pipelines"]:
+            if pipeline["display_name"] == pipeline_name:
+                return self.get_pipeline(pipeline["pipeline_id"])
         return None
 
-    def list_pipelines(self) -> list[Pipeline]:
+    def list_pipelines(self):
         """Lists pipelines."""
-        response = self.api_client.call_api(
-            f"/apis/{self.api_version}/pipelines", "GET"
-        )
-        return [Pipeline(**p) for p in response.get("pipelines", [])]
+        return self.api_client.call_api(f"/apis/{self.api_version}/pipelines", "GET")
 
     def delete_pipeline(self, pipeline_id: str):
         """Deletes a pipeline."""
         return self.api_client.call_api(
             f"/apis/{self.api_version}/pipelines/{pipeline_id}", "DELETE"
         )
-
-    def get_pipeline_version(
-        self, pipeline_id: str, pipeline_version_id: str
-    ) -> PipelineVersion:
-        """Gets a pipeline version."""
-        response = self.api_client.call_api(
-            f"/apis/{self.api_version}/pipelines/{pipeline_id}/versions/{pipeline_version_id}",
-            "GET",
-        )
-        return PipelineVersion(**response)
-
-    def list_pipeline_versions(self, pipeline_id: str) -> list[PipelineVersion]:
-        """Lists pipeline versions."""
-        response = self.api_client.call_api(
-            f"/apis/{self.api_version}/pipelines/{pipeline_id}/versions", "GET"
-        )
-        return [
-            PipelineVersion(**pv) for pv in response.get("pipeline_versions", [])
-        ]
