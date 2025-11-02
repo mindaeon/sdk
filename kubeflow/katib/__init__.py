@@ -15,25 +15,10 @@
 # Import common types.
 from kubeflow.common.types import KubernetesBackendConfig
 
-# Import the Kubeflow Optimizer client.
-from kubeflow.optimizer.api.optimizer_client import OptimizerClient
-
-# Import the Kubeflow Optimizer types.
-from kubeflow.optimizer.types.algorithm_types import GridSearch, RandomSearch
-from kubeflow.optimizer.types.optimization_types import Objective, OptimizationJob, TrialConfig
-from kubeflow.optimizer.types.search_types import Search
-
-# Import the Kubeflow Trainer types.
-from kubeflow.trainer.types.types import TrainJobTemplate
+# Import the Kubeflow Katib client.
+from kubeflow.katib.api.katib_client import KatibClient
 
 __all__ = [
-    "GridSearch",
     "KubernetesBackendConfig",
-    "Objective",
-    "OptimizationJob",
-    "OptimizerClient",
-    "RandomSearch",
-    "Search",
-    "TrainJobTemplate",
-    "TrialConfig",
+    "KatibClient",
 ]

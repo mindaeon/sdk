@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from kubernetes import client
+from kubernetes import config as k8s_config
 
-from kubeflow.core.auth import KubeconfigAuthProvider
+from kubeflow.core.auth import InClusterAuthProvider, KubeconfigAuthProvider
 from kubeflow.core.config import KubeflowConfig
 from kubeflow.core.k8s_resource import K8sResource
 
@@ -31,9 +32,13 @@ class BaseClient:
             config: The KubeflowConfig object to use for authentication.
         """
         self.config = config or KubeflowConfig()
-        auth_provider = KubeconfigAuthProvider(
-            config=self.config.kubeconfig, context=self.config.context
-        )
+        if self.config.auth.provider == "kubeconfig":
+            auth_provider = KubeconfigAuthProvider()
+        elif self.config.auth.provider == "incluster":
+            auth_provider = InClusterAuthProvider()
+        else:
+            raise ValueError(f"Invalid auth provider: {self.config.auth.provider}")
+
         k8s_config = auth_provider.get_api_client_configuration()
         self.api_client = client.ApiClient(k8s_config)
         self.custom_api = client.CustomObjectsApi(self.api_client)
@@ -59,7 +64,7 @@ class BaseClient:
         Returns:
             The custom resource as a K8sResource object.
         """
-        namespace = namespace or self.config.namespace
+        namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.get_namespaced_custom_object(
             group=group,
             version=version,
@@ -75,7 +80,7 @@ class BaseClient:
         version: str,
         plural: str,
         namespace: Optional[str] = None,
-    ) -> list[K8sResource]:
+    ) -> List[K8sResource]:
         """Lists custom resources.
 
         Args:
@@ -87,7 +92,7 @@ class BaseClient:
         Returns:
             A list of custom resources as K8sResource objects.
         """
-        namespace = namespace or self.config.namespace
+        namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.list_namespaced_custom_object(
             group=group,
             version=version,
@@ -116,7 +121,7 @@ class BaseClient:
         Returns:
             The created custom resource as a K8sResource object.
         """
-        namespace = namespace or self.config.namespace
+        namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.create_namespaced_custom_object(
             group=group,
             version=version,
@@ -145,7 +150,7 @@ class BaseClient:
             body: The body of the patch.
             namespace: The namespace of the custom resource.
         """
-        namespace = namespace or self.config.namespace
+        namespace = namespace or self.config.client.namespace
         self.custom_api.patch_namespaced_custom_object(
             group=group,
             version=version,
@@ -172,8 +177,8 @@ class BaseClient:
             name: The name of the custom resource.
             namespace: The namespace of the custom resource.
         """
-        namespace = namespace or self.config.namespace
-        self.custom_api.delete_namespaced_custom_object(
+        namespace = namespace or self.config.client.namespace
+        return self.custom_api.delete_namespaced_custom_object(
             group=group,
             version=version,
             namespace=namespace,

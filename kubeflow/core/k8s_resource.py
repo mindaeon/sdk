@@ -40,12 +40,32 @@ class K8sResource(BaseModel):
     @property
     def name(self) -> str:
         """Returns the name of the Kubernetes resource."""
-        return self.metadata.get("name")
+        return self.metadata.get("name", "")
 
     @property
     def namespace(self) -> Optional[str]:
         """Returns the namespace of the Kubernetes resource."""
         return self.metadata.get("namespace")
+
+    @property
+    def uid(self) -> Optional[str]:
+        """Returns the UID of the Kubernetes resource."""
+        return self.metadata.get("uid")
+
+    @property
+    def creation_timestamp(self) -> Optional[str]:
+        """Returns the creation timestamp of the Kubernetes resource."""
+        return self.metadata.get("creationTimestamp")
+
+    @property
+    def labels(self) -> dict[str, str]:
+        """Returns the labels of the Kubernetes resource."""
+        return self.metadata.get("labels", {})
+
+    @property
+    def annotations(self) -> dict[str, str]:
+        """Returns the annotations of the Kubernetes resource."""
+        return self.metadata.get("annotations", {})
 
     def to_dict(self) -> dict[str, Any]:
         """Returns the raw dictionary representation of the Kubernetes resource."""

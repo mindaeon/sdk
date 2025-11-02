@@ -18,8 +18,8 @@ from enum import Enum
 from typing import Optional, Union
 
 import kubeflow.common.constants as common_constants
-from kubeflow.optimizer.types.algorithm_types import GridSearch, RandomSearch
-from kubeflow.optimizer.types.search_types import (
+from kubeflow.katib.types.algorithm_types import GridSearch, RandomSearch
+from kubeflow.katib.types.search_types import (
     SearchSpace,
 )
 from kubeflow.trainer.types.types import TrainJob
@@ -119,3 +119,21 @@ class OptimizationJob:
     trials: list[Trial]
     creation_timestamp: datetime
     status: str = common_constants.UNKNOWN
+
+
+@dataclass
+class Algorithm:
+    """The algorithm to use for the optimization."""
+
+    name: str
+    settings: Optional[dict] = None
+
+
+@dataclass
+class Optimizer:
+    """An optimizer for a Katib experiment."""
+
+    name: str
+    search_space: SearchSpace
+    objective: Objective
+    algorithm: Algorithm

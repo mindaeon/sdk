@@ -59,7 +59,6 @@ class RunClient(BaseClient):
                 RunState.SUCCEEDED,
                 RunState.FAILED,
                 RunState.SKIPPED,
-                RunState.CANCELED,
             ]:
                 return run
             time.sleep(10)

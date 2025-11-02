@@ -16,20 +16,20 @@
 # Import common types.
 from kubeflow.common.types import KubernetesBackendConfig
 
-# Import the Kubeflow Trainer client.
-from kubeflow.trainer.api.trainer_client import TrainerClient
-from kubeflow.trainer.backends.localprocess.types import LocalProcessBackendConfig
+# Import the Kubeflow Trainer clients.
+from kubeflow.trainer.clients import TrainerClient
 
 # Import the Kubeflow Trainer constants.
 from kubeflow.trainer.constants.constants import DATASET_PATH, MODEL_PATH
 
 # Import the Kubeflow Trainer types.
-from kubeflow.trainer.types.types import (
+from kubeflow.trainer.types import (
     BuiltinTrainer,
     CustomTrainer,
     DataCacheInitializer,
     DataFormat,
     DataType,
+    Entrypoint,
     HuggingFaceDatasetInitializer,
     HuggingFaceModelInitializer,
     Initializer,
@@ -37,9 +37,12 @@ from kubeflow.trainer.types.types import (
     Loss,
     Runtime,
     RuntimeTrainer,
+    Step,
     TorchTuneConfig,
     TorchTuneInstructDataset,
     TrainerType,
+    TrainJob,
+    TrainJobSpec,
     TrainJobTemplate,
 )
 
@@ -50,6 +53,7 @@ __all__ = [
     "DataFormat",
     "DATASET_PATH",
     "DataType",
+    "Entrypoint",
     "HuggingFaceDatasetInitializer",
     "HuggingFaceModelInitializer",
     "Initializer",
@@ -57,12 +61,14 @@ __all__ = [
     "Loss",
     "MODEL_PATH",
     "Runtime",
+    "RuntimeTrainer",
+    "Step",
     "TorchTuneConfig",
     "TorchTuneInstructDataset",
-    "RuntimeTrainer",
-    "TrainJobTemplate",
     "TrainerClient",
     "TrainerType",
-    "LocalProcessBackendConfig",
+    "TrainJob",
+    "TrainJobSpec",
+    "TrainJobTemplate",
     "KubernetesBackendConfig",
 ]

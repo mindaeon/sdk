@@ -17,14 +17,14 @@ from typing import Any, Optional, Union, get_args, get_origin
 
 from kubeflow_katib_api import models
 
-from kubeflow.optimizer.constants import constants
-from kubeflow.optimizer.types.algorithm_types import (
+from kubeflow.katib.constants import constants
+from kubeflow.katib.types.algorithm_types import (
     ALGORITHM_REGISTRY,
     GridSearch,
     RandomSearch,
 )
-from kubeflow.optimizer.types.optimization_types import Direction, Objective
-from kubeflow.optimizer.types.search_types import (
+from kubeflow.katib.types.optimization_types import Direction, Objective
+from kubeflow.katib.types.search_types import (
     CategoricalSearchSpace,
     ContinuousSearchSpace,
     Distribution,

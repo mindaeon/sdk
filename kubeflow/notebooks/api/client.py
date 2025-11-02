@@ -52,7 +52,11 @@ class NotebookClient(BaseClient):
             name=name,
             namespace=namespace,
         )
-        return Notebook(**resource.to_dict())
+        return Notebook(
+            name=resource.metadata["name"],
+            namespace=resource.metadata.get("namespace"),
+            spec=resource.spec,
+        )
 
     def list(self, namespace: Optional[str] = None) -> list[Notebook]:
         """Lists notebooks."""
@@ -62,7 +66,14 @@ class NotebookClient(BaseClient):
             plural=self.plural,
             namespace=namespace,
         )
-        return [Notebook(**item.to_dict()) for item in resources]
+        return [
+            Notebook(
+                name=item.metadata["name"],
+                namespace=item.metadata.get("namespace"),
+                spec=item.spec,
+            )
+            for item in resources
+        ]
 
     def delete(self, name: str, namespace: Optional[str] = None):
         """Deletes a notebook."""

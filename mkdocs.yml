@@ -3,3 +3,5 @@ theme:
   name: material
 nav:
   - Home: index.md
+  - Katib SDK: katib.md
+  - KServe SDK: sdk/kserve.md

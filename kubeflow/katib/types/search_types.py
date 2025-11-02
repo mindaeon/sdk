@@ -18,7 +18,7 @@ from typing import Union
 
 from kubeflow_katib_api import models as katib_models
 
-import kubeflow.optimizer.constants.constants as constants
+import kubeflow.katib.constants.constants as constants
 
 
 # Base class for search spaces.

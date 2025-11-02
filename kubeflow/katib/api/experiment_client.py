@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
-from kubeflow.katib import (
+from kubeflow_katib_api.models import (
     V1beta1AlgorithmSetting,
     V1beta1AlgorithmSpec,
     V1beta1ExperimentSpec,
@@ -24,14 +24,14 @@ from kubeflow.katib import (
     V1beta1ObjectiveSpec,
     V1beta1ParameterSpec,
 )
-from kubeflow.optimizer.types import Optimizer, SearchSpace
+from kubeflow.katib.types import Optimizer, SearchSpace
 
 
-class OptimizerClient(BaseClient):
-    """OptimizerClient is a client for managing Katib experiments as optimizers."""
+class ExperimentClient(BaseClient):
+    """ExperimentClient is a client for managing Katib experiments."""
 
     def __init__(self, config: Optional[KubeflowConfig] = None):
-        """Initializes an OptimizerClient.
+        """Initializes an ExperimentClient.
 
         Args:
             config: The KubeflowConfig object to use for authentication.
@@ -42,11 +42,11 @@ class OptimizerClient(BaseClient):
         self.plural = "experiments"
 
     def create(self, optimizer: Optimizer, namespace: Optional[str] = None):
-        """Creates an optimizer.
+        """Creates an experiment.
 
         Args:
-            optimizer: The optimizer to create.
-            namespace: The namespace to create the optimizer in.
+            optimizer: The experiment to create.
+            namespace: The namespace to create the experiment in.
         """
         namespace = namespace or self.config.namespace
         body = {
@@ -67,11 +67,11 @@ class OptimizerClient(BaseClient):
         )
 
     def get(self, name: str, namespace: Optional[str] = None) -> Optimizer:
-        """Gets an optimizer.
+        """Gets an experiment.
 
         Args:
-            name: The name of the optimizer to get.
-            namespace: The namespace to get the optimizer from.
+            name: The name of the experiment to get.
+            namespace: The namespace to get the experiment from.
         """
         namespace = namespace or self.config.namespace
         resource = self.get_custom_resource(
@@ -90,11 +90,11 @@ class OptimizerClient(BaseClient):
             algorithm=self._parse_algorithm_spec(resource.spec["algorithm"]),
         )
 
-    def list(self, namespace: Optional[str] = None) -> list[Optimizer]:
-        """Lists optimizers.
+    def list(self, namespace: Optional[str] = None) -> List[Optimizer]:
+        """Lists experiments.
 
         Args:
-            namespace: The namespace to list optimizers from.
+            namespace: The namespace to list experiments from.
         """
         namespace = namespace or self.config.namespace
         resources = self.list_custom_resources(
@@ -116,11 +116,11 @@ class OptimizerClient(BaseClient):
         ]
 
     def delete(self, name: str, namespace: Optional[str] = None):
-        """Deletes an optimizer.
+        """Deletes an experiment.
 
         Args:
-            name: The name of the optimizer to delete.
-            namespace: The namespace to delete the optimizer from.
+            name: The name of the experiment to delete.
+            namespace: The namespace to delete the experiment from.
         """
         namespace = namespace or self.config.namespace
         self.delete_custom_resource(
@@ -131,36 +131,83 @@ class OptimizerClient(BaseClient):
             namespace=namespace,
         )
 
+    def pause(self, name: str, namespace: Optional[str] = None):
+        """Pauses an experiment.
+
+        Args:
+            name: The name of the experiment to pause.
+            namespace: The namespace of the experiment.
+        """
+        namespace = namespace or self.config.namespace
+        body = {"spec": {"resumePolicy": "Never"}}
+        self.patch_custom_resource(
+            group=self.group,
+            version=self.version,
+            plural=self.plural,
+            name=name,
+            body=body,
+            namespace=namespace,
+        )
+
+    def resume(self, name: str, namespace: Optional[str] = None):
+        """Resumes an experiment.
+
+        Args:
+            name: The name of the experiment to resume.
+            namespace: The namespace of the experiment.
+        """
+        namespace = namespace or self.config.namespace
+        body = {"spec": {"resumePolicy": "LongRunning"}}
+        self.patch_custom_resource(
+            group=self.group,
+            version=self.version,
+            plural=self.plural,
+            name=name,
+            body=body,
+            namespace=namespace,
+        )
+
+    def get_optimal_trial(self, name: str, namespace: Optional[str] = None) -> dict:
+        """Gets the optimal trial for an experiment.
+
+        Args:
+            name: The name of the experiment.
+            namespace: The namespace of the experiment.
+        """
+        namespace = namespace or self.config.namespace
+        resource = self.get_custom_resource(
+            group=self.group,
+            version=self.version,
+            plural=self.plural,
+            name=name,
+            namespace=namespace,
+        )
+        return resource.status.get("currentOptimalTrial")
+
     def _construct_experiment_spec(self, optimizer: Optimizer) -> V1beta1ExperimentSpec:
         return V1beta1ExperimentSpec(
             objective=V1beta1ObjectiveSpec(
-                type=optimizer.objective.type,
-                goal=optimizer.objective.goal,
-                objective_metric_name=optimizer.objective.objective_metric_name,
+                type=optimizer.objective["type"],
+                goal=optimizer.objective["goal"],
             ),
             algorithm=V1beta1AlgorithmSpec(
-                algorithm_name=optimizer.algorithm.name,
+                algorithm_name=optimizer.algorithm["name"],
                 algorithm_settings=[
                     V1beta1AlgorithmSetting(name=k, value=str(v))
-                    for k, v in optimizer.algorithm.settings.items()
+                    for k, v in optimizer.algorithm["settings"].items()
                 ],
             ),
             parameters=[
                 V1beta1ParameterSpec(
-                    name=p.name,
-                    parameter_type=p.type,
-                    feasible_space=V1beta1FeasibleSpace(
-                        min=p.space.min,
-                        max=p.space.max,
-                        step=p.space.step,
-                        list=p.space.values,
-                    ),
+                    name=name,
+                    parameter_type=spec.parameter_type,
+                    feasible_space=spec.feasible_space,
                 )
-                for p in optimizer.search_space.parameters
+                for name, spec in optimizer.search_space.items()
             ],
         )
 
-    def _parse_parameter_specs(self, params: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _parse_parameter_specs(self, params: List[dict[str, Any]]) -> List[dict[str, Any]]:
         return [
             {
                 "name": p["name"],

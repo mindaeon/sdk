@@ -66,6 +66,7 @@ def test_get_run(fake_config):
         mock_api_client.return_value.call_api = MagicMock(
             return_value={
                 "run_id": "test-run-id",
+                "name": "test-run",
                 "display_name": "test-run",
                 "created_at": "2025-01-01T00:00:00Z",
                 "state": "RUNNING",
@@ -127,13 +128,13 @@ def test_wait_for_run_completion_success(fake_config):
             side_effect=[
                 Run(
                     run_id="test-run-id",
-                    display_name="test-run",
+                    name="test-run",
                     created_at="2025-01-01T00:00:00Z",
                     state=RunState.RUNNING,
                 ),
                 Run(
                     run_id="test-run-id",
-                    display_name="test-run",
+                    name="test-run",
                     created_at="2025-01-01T00:00:00Z",
                     state=RunState.SUCCEEDED,
                 ),
@@ -159,13 +160,13 @@ def test_wait_for_run_completion_failure(fake_config):
             side_effect=[
                 Run(
                     run_id="test-run-id",
-                    display_name="test-run",
+                    name="test-run",
                     created_at="2025-01-01T00:00:00Z",
                     state=RunState.RUNNING,
                 ),
                 Run(
                     run_id="test-run-id",
-                    display_name="test-run",
+                    name="test-run",
                     created_at="2025-01-01T00:00:00Z",
                     state=RunState.FAILED,
                 ),
@@ -190,7 +191,7 @@ def test_wait_for_run_completion_timeout(fake_config):
         run_client.get_run = MagicMock(
             return_value=Run(
                 run_id="test-run-id",
-                display_name="test-run",
+                name="test-run",
                 created_at="2025-01-01T00:00:00Z",
                 state=RunState.RUNNING,
             )

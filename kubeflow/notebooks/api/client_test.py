@@ -59,7 +59,7 @@ def test_get_notebook(mock_get_custom_resource, mock_auth_provider, _mock_api_cl
     )
 
     # Act
-    client.ge("test-notebook")
+    client.get("test-notebook")
 
     # Assert
     mock_get_custom_resource.assert_called_with(
@@ -78,7 +78,7 @@ def test_list_notebooks(mock_list_custom_resources, mock_auth_provider, _mock_ap
     """Tests listing notebooks."""
     # Arrange
     client = NotebookClient()
-    mock_list_custom_resources.return_value = {"items": []}
+    mock_list_custom_resources.return_value = []
 
     # Act
     client.list()

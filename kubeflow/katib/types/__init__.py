@@ -12,10 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .api.client import NotebookClient
-from .models import Notebook
+from .algorithm_types import GridSearch, RandomSearch
+from .katib_types import Experiment, Suggestion, Trial
+from .optimization_types import Objective, OptimizationJob, Optimizer, TrialConfig
+from .search_types import Search, SearchSpace
 
 __all__ = [
-    "NotebookClient",
-    "Notebook",
+    "GridSearch",
+    "RandomSearch",
+    "Experiment",
+    "Suggestion",
+    "Trial",
+    "Objective",
+    "OptimizationJob",
+    "Optimizer",
+    "TrialConfig",
+    "Search",
+    "SearchSpace",
 ]

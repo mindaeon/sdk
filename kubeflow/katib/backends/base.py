@@ -15,8 +15,8 @@
 import abc
 from typing import Any, Optional
 
-from kubeflow.optimizer.types.algorithm_types import RandomSearch
-from kubeflow.optimizer.types.optimization_types import Objective, OptimizationJob, TrialConfig
+from kubeflow.katib.types.algorithm_types import RandomSearch
+from kubeflow.katib.types.optimization_types import Objective, OptimizationJob, TrialConfig
 from kubeflow.trainer.types.types import TrainJobTemplate
 
 
