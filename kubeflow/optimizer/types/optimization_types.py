@@ -19,7 +19,10 @@ from typing import Optional, Union
 
 import kubeflow.common.constants as common_constants
 from kubeflow.optimizer.types.algorithm_types import GridSearch, RandomSearch
-from kubeflow.optimizer.types.search_types import CategoricalSearchSpace, ContinuousSearchSpace
+from kubeflow.optimizer.types.search_types import (
+    Search,
+    SearchSpace,
+)
 from kubeflow.trainer.types.types import TrainJob
 
 
@@ -110,7 +113,7 @@ class OptimizationJob:
     """
 
     name: str
-    search_space: dict[str, Union[ContinuousSearchSpace, CategoricalSearchSpace]]
+    search_space: dict[str, SearchSpace]
     objectives: list[Objective]
     algorithm: Union[GridSearch, RandomSearch]
     trial_config: TrialConfig

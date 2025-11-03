@@ -21,6 +21,11 @@ from kubeflow_katib_api import models as katib_models
 import kubeflow.optimizer.constants.constants as constants
 
 
+# Base class for search spaces.
+class SearchSpace:
+    pass
+
+
 # Search space distribution helpers
 class Search:
     """Helper class for defining search space parameters."""
@@ -84,12 +89,19 @@ class Distribution(Enum):
 
 
 @dataclass
-class ContinuousSearchSpace:
+class ContinuousSearchSpace(SearchSpace):
     min: Union[float, int]
     max: Union[float, int]
     distribution: Distribution
 
 
 @dataclass
-class CategoricalSearchSpace:
-    choices: list
+class DiscreteSearchSpace(SearchSpace):
+    min: int
+    max: int
+    step: int
+
+
+@dataclass
+class CategoricalSearchSpace(SearchSpace):
+    values: list

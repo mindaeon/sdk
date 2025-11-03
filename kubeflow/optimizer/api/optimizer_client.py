@@ -13,40 +13,43 @@
 # limitations under the License.
 
 import logging
+import random
+import string
 from typing import Any, Optional
+import uuid
 
-from kubeflow.common.types import KubernetesBackendConfig
-from kubeflow.optimizer.backends.kubernetes.backend import KubernetesBackend
-from kubeflow.optimizer.types.algorithm_types import BaseAlgorithm
-from kubeflow.optimizer.types.optimization_types import Objective, OptimizationJob, TrialConfig
+from kubeflow_katib_api import models
+
+from kubeflow.core.base_client import BaseClient
+from kubeflow.core.config import KubeflowConfig
+from kubeflow.core.k8s_resource import K8sResource
+from kubeflow.optimizer.constants import constants
+from kubeflow.optimizer.types.algorithm_types import (
+    BaseAlgorithm,
+    GridSearch,
+    Hyperband,
+    RandomSearch,
+)
+from kubeflow.optimizer.types.optimization_types import (
+    Metric,
+    Objective,
+    OptimizationJob,
+    Search,
+    Trial,
+    TrialConfig,
+)
+from kubeflow.trainer.api.trainer_client import TrainerClient
+import kubeflow.trainer.constants.constants as trainer_constants
 from kubeflow.trainer.types.types import TrainJobTemplate
 
 logger = logging.getLogger(__name__)
 
 
-class OptimizerClient:
-    def __init__(
-        self,
-        backend_config: Optional[KubernetesBackendConfig] = None,
-    ):
-        """Initialize a Kubeflow Optimizer client.
-
-        Args:
-            backend_config: Backend configuration. Either KubernetesBackendConfig or None to use
-                default config class. Defaults to KubernetesBackendConfig.
-
-        Raises:
-            ValueError: Invalid backend configuration.
-
-        """
-        # Set the default backend config.
-        if not backend_config:
-            backend_config = KubernetesBackendConfig()
-
-        if isinstance(backend_config, KubernetesBackendConfig):
-            self.backend = KubernetesBackend(backend_config)
-        else:
-            raise ValueError(f"Invalid backend config '{backend_config}'")
+class OptimizerClient(BaseClient):
+    def __init__(self, config: Optional[KubeflowConfig] = None):
+        """Initialize a Kubeflow Optimizer client."""
+        super().__init__(config=config)
+        self.trainer_client = TrainerClient(config=self.config)
 
     def optimize(
         self,
@@ -57,70 +60,196 @@ class OptimizerClient:
         objectives: Optional[list[Objective]] = None,
         algorithm: Optional[BaseAlgorithm] = None,
     ) -> str:
-        """Create an OptimizationJob for hyperparameter tuning.
+        """Create an OptimizationJob for hyperparameter tuning."""
+        job_name = random.choice(string.ascii_lowercase) + uuid.uuid4().hex[:11]
+        objectives = objectives or [Objective()]
+        algorithm = algorithm or RandomSearch()
+        trial_config = trial_config or TrialConfig()
 
-        Args:
-            trial_template: The TrainJob template defining the training script.
-            trial_config: Optional configuration to run Trials.
-            objectives: List of objectives to optimize.
-            search_space: Dictionary mapping parameter names to Search specifications using
-                Search.uniform(), Search.loguniform(), Search.choice(), etc.
-            algorithm: The optimization algorithm to use. Defaults to RandomSearch.
+        parameters_spec = []
+        trial_parameters = []
+        if trial_template.trainer.func_args is None:
+            trial_template.trainer.func_args = {}
 
-        Returns:
-            The unique name of the Experiment that has been generated.
+        for param_name, param_spec in search_space.items():
+            param_spec.name = param_name
+            parameters_spec.append(param_spec)
+            trial_parameters.append(
+                models.V1beta1TrialParameterSpec(name=param_name, reference=param_name)
+            )
+            trial_template.trainer.func_args[param_name] = f"${{trialParameters.{param_name}}}"
 
-        Raises:
-            ValueError: Input arguments are invalid.
-            TimeoutError: Timeout to create Experiment.
-            RuntimeError: Failed to create Experiment.
-        """
-        return self.backend.optimize(
-            trial_template=trial_template,
-            trial_config=trial_config,
-            objectives=objectives,
-            search_space=search_space,
-            algorithm=algorithm,
+        train_job_spec = self.trainer_client._get_trainjob_spec(
+            runtime=trial_template.runtime,
+            trainer=trial_template.trainer,
+            initializer=trial_template.initializer,
         )
 
+        experiment = models.V1beta1Experiment(
+            apiVersion=constants.API_VERSION,
+            kind=constants.EXPERIMENT_KIND,
+            metadata={"name": job_name},
+            spec=models.V1beta1ExperimentSpec(
+                trialTemplate=models.V1beta1TrialTemplate(
+                    retain=True,
+                    primaryContainerName=trainer_constants.NODE,
+                    trialParameters=trial_parameters,
+                    trialSpec={
+                        "apiVersion": trainer_constants.API_VERSION,
+                        "kind": trainer_constants.TRAINJOB_KIND,
+                        "spec": train_job_spec.to_dict(),
+                    },
+                ),
+                parameters=parameters_spec,
+                maxTrialCount=trial_config.num_trials,
+                parallelTrialCount=trial_config.parallel_trials,
+                maxFailedTrialCount=trial_config.max_failed_trials,
+                objective=models.V1beta1ObjectiveSpec(
+                    objectiveMetricName=objectives[0].metric,
+                    type=objectives[0].direction.value,
+                    additionalMetricNames=[obj.metric for obj in objectives[1:]]
+                    if len(objectives) > 1
+                    else None,
+                ),
+                algorithm=algorithm._to_katib_spec(),
+            ),
+        )
+
+        self.create_custom_resource(
+            group=constants.GROUP,
+            version=constants.VERSION,
+            plural=constants.EXPERIMENT_PLURAL,
+            body=experiment.to_dict(),
+        )
+        return job_name
+
     def list_jobs(self) -> list[OptimizationJob]:
-        """List of the created OptimizationJobs
-
-        Returns:
-            List of created OptimizationJobs. If no OptimizationJob exist,
-                an empty list is returned.
-
-        Raises:
-            TimeoutError: Timeout to list OptimizationJobs.
-            RuntimeError: Failed to list OptimizationJobs.
-        """
-
-        return self.backend.list_jobs()
+        """List created OptimizationJobs."""
+        resources = self.list_custom_resources(
+            group=constants.GROUP,
+            version=constants.VERSION,
+            plural=constants.EXPERIMENT_PLURAL,
+        )
+        return [self._from_k8s_resource(res) for res in resources]
 
     def get_job(self, name: str) -> OptimizationJob:
-        """Get the OptimizationJob object
-
-        Args:
-            name: Name of the OptimizationJob.
-
-        Returns:
-            A OptimizationJob object.
-
-        Raises:
-            TimeoutError: Timeout to get a OptimizationJob.
-            RuntimeError: Failed to get a OptimizationJob.
-        """
-
-        return self.backend.get_job(name=name)
+        """Get an OptimizationJob."""
+        resource = self.get_custom_resource(
+            group=constants.GROUP,
+            version=constants.VERSION,
+            plural=constants.EXPERIMENT_PLURAL,
+            name=name,
+        )
+        return self._from_k8s_resource(resource)
 
     def delete_job(self, name: str):
-        """Delete the OptimizationJob.
+        """Delete an OptimizationJob."""
+        self.delete_custom_resource(
+            group=constants.GROUP,
+            version=constants.VERSION,
+            plural=constants.EXPERIMENT_PLURAL,
+            name=name,
+        )
 
-        Args:
-            name: Name of the OptimizationJob.
+    def _from_k8s_resource(self, resource: K8sResource) -> OptimizationJob:
+        """Convert a K8sResource to an OptimizationJob."""
+        spec = resource.spec or {}
+        status = resource.status or {}
+        job = OptimizationJob(
+            name=resource.name,
+            search_space=self._get_search_space(spec.get("parameters", [])),
+            objectives=self._get_objectives(spec.get("objective", {})),
+            algorithm=self._get_algorithm(spec.get("algorithm", {})),
+            trial_config=TrialConfig(
+                num_trials=spec.get("maxTrialCount"),
+                parallel_trials=spec.get("parallelTrialCount"),
+                max_failed_trials=spec.get("maxFailedTrialCount"),
+            ),
+            trials=self._get_trials(resource.name),
+            creation_timestamp=resource.creation_timestamp,
+            status=self._get_status(status),
+        )
+        return job
 
-        Raises:
-            TimeoutError: Timeout to delete OptimizationJob.
-            RuntimeError: Failed to delete OptimizationJob.
-        """
-        return self.backend.delete_job(name=name)
+    def _get_trials(self, job_name: str) -> list[Trial]:
+        """Get Trials for an OptimizationJob."""
+        resources = self.list_custom_resources(
+            group=constants.GROUP,
+            version=constants.VERSION,
+            plural=constants.TRIAL_PLURAL,
+            namespace=self.config.client.namespace,
+        )
+        trials = []
+        for res in resources:
+            if res.labels.get(constants.EXPERIMENT_LABEL) == job_name:
+                spec = res.spec or {}
+                status = res.status or {}
+                trial = Trial(
+                    name=res.name,
+                    parameters={
+                        p["name"]: p["value"] for p in spec.get("parameterAssignments", [])
+                    },
+                    trainjob=self.trainer_client.get_job(name=res.name),
+                    metrics=[Metric(**m) for m in status.get("observation", {}).get("metrics", [])],
+                )
+                trials.append(trial)
+        return trials
+
+    def _get_status(self, status: dict) -> str:
+        """Get the status of an OptimizationJob."""
+        conditions = status.get("conditions", [])
+        for c in conditions:
+            if c.get("type") == constants.EXPERIMENT_SUCCEEDED and c.get("status") == "True":
+                return constants.OPTIMIZATION_JOB_COMPLETE
+            elif c.get("type") == constants.OPTIMIZATION_JOB_FAILED and c.get("status") == "True":
+                return constants.OPTIMIZATION_JOB_FAILED
+        return constants.OPTIMIZATION_JOB_RUNNING
+
+    def _get_search_space(self, params: list) -> dict:
+        """Get search space from Katib spec."""
+        search_space = {}
+        for p in params:
+            name = p["name"]
+            param_type = p["parameterType"]
+            space = p["feasibleSpace"]
+            if param_type == "int":
+                search_space[name] = Search.range(
+                    min=int(space["min"]),
+                    max=int(space["max"]),
+                    step=int(space.get("step", 1)),
+                )
+            elif param_type == "double":
+                search_space[name] = Search.uniform(
+                    min=float(space["min"]), max=float(space["max"])
+                )
+            elif param_type == "categorical":
+                search_space[name] = Search.choice(space["list"])
+            elif param_type == "discrete":
+                search_space[name] = Search.choice([int(v) for v in space["list"]])
+        return search_space
+
+    def _get_objectives(self, objective: dict) -> list:
+        """Get objectives from Katib spec."""
+        objectives = [
+            Objective(
+                metric=objective.get("objectiveMetricName"),
+                direction=objective.get("type"),
+            )
+        ]
+        for m in objective.get("additionalMetricNames", []):
+            objectives.append(Objective(metric=m))
+        return objectives
+
+    def _get_algorithm(self, algorithm: dict) -> BaseAlgorithm:
+        """Get algorithm from Katib spec."""
+        name = algorithm.get("algorithmName")
+        settings = {s["name"]: s["value"] for s in algorithm.get("algorithmSettings", [])}
+        if name == "random":
+            return RandomSearch()
+        elif name == "grid":
+            return GridSearch()
+        elif name == "hyperband":
+            return Hyperband(**settings)
+        else:
+            # Fallback for other algorithms.
+            return BaseAlgorithm(name=name, settings=settings)

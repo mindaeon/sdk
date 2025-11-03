@@ -40,6 +40,10 @@ def algorithm_to_katib_spec(obj: Any) -> models.V1beta1AlgorithmSpec:
 
 # Base implementation for the search algorithm.
 class BaseAlgorithm(abc.ABC):
+    def __init__(self, name=None, settings=None):
+        self.name = name
+        self.settings = settings
+
     @property
     @abc.abstractmethod
     def algorithm_name(self) -> str:
@@ -80,8 +84,23 @@ class RandomSearch(BaseAlgorithm):
         return algorithm_to_katib_spec(self)
 
 
+@dataclass
+class Hyperband(BaseAlgorithm):
+    """Hyperband algorithm."""
+
+    random_state: Optional[int] = None
+
+    @property
+    def algorithm_name(self) -> str:
+        return "hyperband"
+
+    def _to_katib_spec(self):
+        return algorithm_to_katib_spec(self)
+
+
 # Registry of supported search algorithms.
 ALGORITHM_REGISTRY = {
     GridSearch().algorithm_name: GridSearch,
     RandomSearch().algorithm_name: RandomSearch,
+    Hyperband().algorithm_name: Hyperband,
 }
