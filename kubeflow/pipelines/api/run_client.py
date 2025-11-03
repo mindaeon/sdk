@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta, timezone
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from kubeflow.core.base_client import BaseClient
@@ -31,15 +31,16 @@ class RunClient(BaseClient):
 
     def create_run(self, pipeline_id: str, run_name: str):
         """Creates a pipeline run."""
-        body = {
-            "display_name": run_name,
-            "pipeline_version_reference": {"pipeline_id": pipeline_id},
-        }
-        return self.api_client.call_api(f"/apis/{self.api_version}/runs", "POST", body=body)
+        body = {"display_name": run_name, "pipeline_version_reference": {"pipeline_id": pipeline_id}}
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/runs", "POST", body=body
+        )
 
     def get_run(self, run_id: str) -> Run:
         """Gets a pipeline run."""
-        response = self.api_client.call_api(f"/apis/{self.api_version}/runs/{run_id}", "GET")
+        response = self.api_client.call_api(
+            f"/apis/{self.api_version}/runs/{run_id}", "GET"
+        )
         return Run(**response)
 
     def list_runs(self):
@@ -48,7 +49,9 @@ class RunClient(BaseClient):
 
     def delete_run(self, run_id: str):
         """Deletes a pipeline run."""
-        return self.api_client.call_api(f"/apis/{self.api_version}/runs/{run_id}", "DELETE")
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/runs/{run_id}", "DELETE"
+        )
 
     def wait_for_run_completion(self, run_id: str, timeout: int = 600) -> Run:
         """Waits for a pipeline run to complete."""
@@ -59,6 +62,7 @@ class RunClient(BaseClient):
                 RunState.SUCCEEDED,
                 RunState.FAILED,
                 RunState.SKIPPED,
+                RunState.CANCELED,
             ]:
                 return run
             time.sleep(10)

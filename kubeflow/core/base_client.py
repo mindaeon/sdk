@@ -6,38 +6,38 @@
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
+# Unless required by applicable law_ or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from kubernetes import client
-from kubernetes import config as k8s_config
 
-from kubeflow.core.auth import InClusterAuthProvider, KubeconfigAuthProvider
-from kubeflow.core.config import KubeflowConfig
-from kubeflow.core.k8s_resource import K8sResource
+from .auth import InClusterAuthProvider, KubeconfigAuthProvider
+from .config import KubeflowConfig
+from .k8s_resource import K8sResource
 
 
 class BaseClient:
-    """Base class for all Kubeflow SDK clients."""
+    """Base class for Kubeflow clients."""
 
     def __init__(self, config: Optional[KubeflowConfig] = None):
-        """Initializes a BaseClient.
+        """Initializes the BaseClient."""
+        if not config:
+            config = KubeflowConfig()
+        self.config = config
 
-        Args:
-            config: The KubeflowConfig object to use for authentication.
-        """
-        self.config = config or KubeflowConfig()
         if self.config.auth.provider == "kubeconfig":
             auth_provider = KubeconfigAuthProvider()
         elif self.config.auth.provider == "incluster":
             auth_provider = InClusterAuthProvider()
         else:
-            raise ValueError(f"Invalid auth provider: {self.config.auth.provider}")
+            raise ValueError(
+                f"Invalid auth provider: {self.config.auth.provider}"
+            )
 
         k8s_config = auth_provider.get_api_client_configuration()
         self.api_client = client.ApiClient(k8s_config)
@@ -52,23 +52,47 @@ class BaseClient:
         name: str,
         namespace: Optional[str] = None,
     ) -> K8sResource:
-        """Gets a custom resource.
-
-        Args:
-            group: The group of the custom resource.
-            version: The version of the custom resource.
-            plural: The plural name of the custom resource.
-            name: The name of the custom resource.
-            namespace: The namespace of the custom resource.
-
-        Returns:
-            The custom resource as a K8sResource object.
-        """
+        """Gets a Kubernetes custom resource."""
         namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.get_namespaced_custom_object(
             group=group,
             version=version,
             namespace=namespace,
+            plural=plural,
+            name=name,
+        )
+
+    def get_cluster_custom_resource(
+        self, group: str, version: str, plural: str, name: str
+    ) -> K8sResource:
+        """Gets a cluster-scoped Kubernetes custom resource."""
+        api_response = self.custom_api.get_cluster_custom_object(
+            group=group,
+            version=version,
+            plural=plural,
+            name=name,
+        )
+        return K8sResource(**api_response)
+
+    def create_cluster_custom_resource(
+        self, group: str, version: str, plural: str, body: Dict[str, Any]
+    ) -> K8sResource:
+        """Creates a cluster-scoped Kubernetes custom resource."""
+        api_response = self.custom_api.create_cluster_custom_object(
+            group=group,
+            version=version,
+            plural=plural,
+            body=body,
+        )
+        return K8sResource(**api_response)
+
+    def delete_cluster_custom_resource(
+        self, group: str, version: str, plural: str, name: str
+    ) -> Dict[str, Any]:
+        """Deletes a cluster-scoped Kubernetes custom resource."""
+        return self.custom_api.delete_cluster_custom_object(
+            group=group,
+            version=version,
             plural=plural,
             name=name,
         )
@@ -81,17 +105,7 @@ class BaseClient:
         plural: str,
         namespace: Optional[str] = None,
     ) -> List[K8sResource]:
-        """Lists custom resources.
-
-        Args:
-            group: The group of the custom resources.
-            version: The version of the custom resources.
-            plural: The plural name of the custom resources.
-            namespace: The namespace of the custom resources.
-
-        Returns:
-            A list of custom resources as K8sResource objects.
-        """
+        """Lists Kubernetes custom resources."""
         namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.list_namespaced_custom_object(
             group=group,
@@ -106,21 +120,10 @@ class BaseClient:
         group: str,
         version: str,
         plural: str,
-        body: dict[str, Any],
+        body: Dict[str, Any],
         namespace: Optional[str] = None,
     ) -> K8sResource:
-        """Creates a custom resource.
-
-        Args:
-            group: The group of the custom resource.
-            version: The version of the custom resource.
-            plural: The plural name of the custom resource.
-            body: The body of the custom resource.
-            namespace: The namespace of the custom resource.
-
-        Returns:
-            The created custom resource as a K8sResource object.
-        """
+        """Creates a Kubernetes custom resource."""
         namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.create_namespaced_custom_object(
             group=group,
@@ -131,35 +134,6 @@ class BaseClient:
         )
         return K8sResource(**api_response)
 
-    def patch_custom_resource(
-        self,
-        group: str,
-        version: str,
-        plural: str,
-        name: str,
-        body: dict[str, Any],
-        namespace: Optional[str] = None,
-    ):
-        """Patches a custom resource.
-
-        Args:
-            group: The group of the custom resource.
-            version: The version of the custom resource.
-            plural: The plural name of the custom resource.
-            name: The name of the custom resource.
-            body: The body of the patch.
-            namespace: The namespace of the custom resource.
-        """
-        namespace = namespace or self.config.client.namespace
-        self.custom_api.patch_namespaced_custom_object(
-            group=group,
-            version=version,
-            namespace=namespace,
-            plural=plural,
-            name=name,
-            body=body,
-        )
-
     def delete_custom_resource(
         self,
         group: str,
@@ -167,16 +141,8 @@ class BaseClient:
         plural: str,
         name: str,
         namespace: Optional[str] = None,
-    ):
-        """Deletes a custom resource.
-
-        Args:
-            group: The group of the custom resource.
-            version: The version of the custom resource.
-            plural: The plural name of the custom resource.
-            name: The name of the custom resource.
-            namespace: The namespace of the custom resource.
-        """
+    ) -> Dict[str, Any]:
+        """Deletes a Kubernetes custom resource."""
         namespace = namespace or self.config.client.namespace
         return self.custom_api.delete_namespaced_custom_object(
             group=group,

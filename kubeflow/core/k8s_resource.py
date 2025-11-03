@@ -12,25 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class K8sResource(BaseModel):
-    """A wrapper for Kubernetes resources.
-
-    This class provides a Pydantic model for Kubernetes resources. It includes
-    methods for accessing common fields and converting the resource to a
-    dictionary.
+    """
+    A Pydantic-based wrapper for Kubernetes resource dictionaries.
+    Provides convenient access to common metadata fields.
     """
 
     api_version: str = Field(..., alias="apiVersion")
     kind: str
-    metadata: dict[str, Any]
-    spec: Optional[dict[str, Any]] = None
-    status: Optional[dict[str, Any]] = None
-    raw: Optional[dict[str, Any]] = Field(None, alias="_raw")
+    metadata: Dict[str, Any]
+    spec: Optional[Dict[str, Any]] = None
+    status: Optional[Dict[str, Any]] = None
+    raw: Dict[str, Any] = Field(..., alias="_raw")
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="allow",
+    )
 
     def __init__(self, **data):
         init_data = data.copy()
@@ -39,43 +42,24 @@ class K8sResource(BaseModel):
 
     @property
     def name(self) -> str:
-        """Returns the name of the Kubernetes resource."""
         return self.metadata.get("name", "")
 
     @property
     def namespace(self) -> Optional[str]:
-        """Returns the namespace of the Kubernetes resource."""
         return self.metadata.get("namespace")
 
     @property
     def uid(self) -> Optional[str]:
-        """Returns the UID of the Kubernetes resource."""
         return self.metadata.get("uid")
 
     @property
     def creation_timestamp(self) -> Optional[str]:
-        """Returns the creation timestamp of the Kubernetes resource."""
         return self.metadata.get("creationTimestamp")
 
     @property
-    def labels(self) -> dict[str, str]:
-        """Returns the labels of the Kubernetes resource."""
+    def labels(self) -> Dict[str, str]:
         return self.metadata.get("labels", {})
 
     @property
-    def annotations(self) -> dict[str, str]:
-        """Returns the annotations of the Kubernetes resource."""
+    def annotations(self) -> Dict[str, str]:
         return self.metadata.get("annotations", {})
-
-    def to_dict(self) -> dict[str, Any]:
-        """Returns the raw dictionary representation of the Kubernetes resource."""
-        return self.raw
-
-    def to_json(self, **kwargs) -> dict[str, Any]:
-        """Returns the JSON representation of the Kubernetes resource."""
-        return self.model_dump_json(**kwargs)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "K8sResource":
-        """Creates a K8sResource object from a dictionary."""
-        return cls(**data)

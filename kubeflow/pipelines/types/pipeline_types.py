@@ -13,15 +13,31 @@
 # limitations under the License.
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Dict, Any, Optional
 
 from pydantic import BaseModel
 
 
-class Pipeline(BaseModel):
+class PipelineSpec(BaseModel):
     """The specification of a Kubeflow Pipeline."""
 
-    pipeline_manifest: dict[str, Any]
-    name: Optional[str] = None
+    pipeline_manifest: Dict[str, Any]
+
+
+class PipelineVersion(BaseModel):
+    """A version of a Kubeflow Pipeline."""
+
+    pipeline_version_id: str
+    display_name: str
+    created_at: datetime
     description: Optional[str] = None
-    created_at: Optional[datetime] = None
+
+
+class Pipeline(BaseModel):
+    """A Kubeflow Pipeline."""
+
+    pipeline_id: str
+    display_name: str
+    created_at: datetime
+    description: Optional[str] = None
+    pipeline_spec: Optional[PipelineSpec] = None

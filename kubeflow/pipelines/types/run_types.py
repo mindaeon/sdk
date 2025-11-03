@@ -1,4 +1,4 @@
-# Copyright 2024 The Kubeflow Authors.
+# Copyright 2025 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,34 +14,34 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Dict, Any, Optional
 
 from pydantic import BaseModel
 
 
 class RunState(str, Enum):
-    """The state of a Kubeflow Pipeline Run."""
+    """The state of a pipeline run."""
 
-    PENDING = "PENDING"
-    RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
     SKIPPED = "SKIPPED"
-    UNKNOWN = "UNKNOWN"
+    CANCELED = "CANCELED"
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
 
 
 class Run(BaseModel):
-    """Basic information about a Kubeflow Pipeline Run."""
+    """A Kubeflow Pipeline Run."""
 
     run_id: str
-    name: str
+    display_name: str
     created_at: datetime
     state: RunState
-    error: Optional[dict[str, Any]] = None
-    pipeline_version_reference: Optional[dict[str, Any]] = None
+    error: Optional[Dict[str, Any]] = None
+    pipeline_version_reference: Optional[Dict[str, Any]] = None
 
 
-class RunDetails(BaseModel):
+class RunDetails(Run):
     """Detailed information about a Kubeflow Pipeline Run."""
 
-    run_details: dict[str, Any]
+    run_details: Dict[str, Any]

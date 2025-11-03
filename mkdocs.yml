@@ -3,7 +3,4 @@ theme:
   name: material
 nav:
   - Home: index.md
-  - Katib SDK: katib.md
-  - KServe SDK: sdk/kserve.md
-  - Model Registry SDK: sdk/model_registry.md
-  - Spark Operator SDK: sdk/spark_operator.md
+  - Dashboard SDK: sdk/dashboard.md

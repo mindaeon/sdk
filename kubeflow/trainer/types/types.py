@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Callable, Optional, Union
@@ -249,7 +249,6 @@ class RuntimeTrainer:
 class Runtime:
     name: str
     trainer: RuntimeTrainer
-    spec: dict = field(default_factory=dict)
     pretrained_model: Optional[str] = None
 
 
@@ -267,37 +266,11 @@ class Step:
 @dataclass
 class TrainJob:
     name: str
-    runtime: Optional[Runtime] = None
-    steps: list[Step] = field(default_factory=list)
-    num_nodes: int = 0
-    creation_timestamp: datetime = field(default_factory=datetime.now)
-    status: dict = field(default_factory=dict)
-
-    def __post_init__(self):
-        if isinstance(self.creation_timestamp, str):
-            self.creation_timestamp = datetime.fromisoformat(self.creation_timestamp)
-
-    def is_running(self) -> bool:
-        return self.status and self.status.get("phase") in ["Pending", "Running", "Unknown"]
-
-    def to_dict(self):
-        return asdict(self)
-
-
-@dataclass
-class TrainJobSpec:
-    """The specification of a TrainJob."""
-
-    def to_dict(self):
-        return {}
-
-
-@dataclass
-class Entrypoint:
-    """The entrypoint of a TrainJob."""
-
-    name: str
-    url: str
+    runtime: Runtime
+    steps: list[Step]
+    num_nodes: int
+    creation_timestamp: datetime
+    status: str = common_constants.UNKNOWN
 
 
 # Configuration for the HuggingFace dataset initializer.

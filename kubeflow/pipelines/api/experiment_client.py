@@ -29,7 +29,9 @@ class ExperimentClient(BaseClient):
     def create_experiment(self, experiment_name: str):
         """Creates a pipeline experiment."""
         body = {"display_name": experiment_name}
-        return self.api_client.call_api(f"/apis/{self.api_version}/experiments", "POST", body=body)
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/experiments", "POST", body=body
+        )
 
     def get_experiment(self, experiment_id: str):
         """Gets a pipeline experiment."""
@@ -39,7 +41,9 @@ class ExperimentClient(BaseClient):
 
     def list_experiments(self):
         """Lists pipeline experiments."""
-        return self.api_client.call_api(f"/apis/{self.api_version}/experiments", "GET")
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/experiments", "GET"
+        )
 
     def delete_experiment(self, experiment_id: str):
         """Deletes a pipeline experiment."""

@@ -11,32 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import List, Optional
-
-from pydantic import BaseModel
-
-
-class InputSpec(BaseModel):
-    """Specification for a component input."""
-
-    name: str
-    type: str
-    description: Optional[str] = None
-
-
-class OutputSpec(BaseModel):
-    """Specification for a component output."""
-
-    name: str
-    type: str
-    description: Optional[str] = None
-
-
-class ComponentSpec(BaseModel):
-    """Specification for a pipeline component."""
-
-    name: str
-    description: Optional[str] = None
-    inputs: List[InputSpec] = []
-    outputs: List[OutputSpec] = []

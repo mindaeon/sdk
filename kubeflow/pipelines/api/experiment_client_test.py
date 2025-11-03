@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch, MagicMock
 
-from kubernetes import client
 import pytest
-
+from kubernetes import client
 from kubeflow.core.config import KubeflowConfig
 from kubeflow.pipelines.api.experiment_client import ExperimentClient
 
@@ -31,10 +30,11 @@ def fake_config():
 
 def test_create_experiment(fake_config):
     """Tests the create_experiment method."""
-    with (
-        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
-        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
-    ):
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -52,10 +52,11 @@ def test_create_experiment(fake_config):
 
 def test_get_experiment(fake_config):
     """Tests the get_experiment method."""
-    with (
-        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
-        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
-    ):
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -70,10 +71,11 @@ def test_get_experiment(fake_config):
 
 def test_list_experiments(fake_config):
     """Tests the list_experiments method."""
-    with (
-        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
-        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
-    ):
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -81,15 +83,18 @@ def test_list_experiments(fake_config):
         experiment_client = ExperimentClient(config=fake_config)
         experiment_client.list_experiments()
 
-        experiment_client.api_client.call_api.assert_called_with("/apis/v2beta1/experiments", "GET")
+        experiment_client.api_client.call_api.assert_called_with(
+            "/apis/v2beta1/experiments", "GET"
+        )
 
 
 def test_delete_experiment(fake_config):
     """Tests the delete_experiment method."""
-    with (
-        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
-        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
-    ):
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_auth_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )

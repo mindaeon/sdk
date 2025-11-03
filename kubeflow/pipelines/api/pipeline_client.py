@@ -57,7 +57,9 @@ class PipelineClient(BaseClient):
 
     def get_pipeline(self, pipeline_id: str):
         """Gets a pipeline."""
-        return self.api_client.call_api(f"/apis/{self.api_version}/pipelines/{pipeline_id}", "GET")
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines/{pipeline_id}", "GET"
+        )
 
     def get_pipeline_by_name(self, pipeline_name: str):
         """Gets a pipeline by name."""
@@ -69,7 +71,9 @@ class PipelineClient(BaseClient):
 
     def list_pipelines(self):
         """Lists pipelines."""
-        return self.api_client.call_api(f"/apis/{self.api_version}/pipelines", "GET")
+        return self.api_client.call_api(
+            f"/apis/{self.api_version}/pipelines", "GET"
+        )
 
     def delete_pipeline(self, pipeline_id: str):
         """Deletes a pipeline."""

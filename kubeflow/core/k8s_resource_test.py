@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from kubeflow.core.k8s_resource import K8sResource
 
 # A sample Kubernetes resource dictionary for testing

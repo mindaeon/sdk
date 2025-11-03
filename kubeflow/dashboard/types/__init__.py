@@ -12,18 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class KubeflowException(Exception):
-    """Base class for all Kubeflow SDK exceptions."""
-    pass
+"""The Kubeflow Dashboard SDK."""
 
-class APIException(KubeflowException):
-    """Raised when an API call fails."""
-    pass
+from .profile import Owner, Profile, ProfileSpec, ResourceQuota
 
-class NotFoundException(APIException):
-    """Raised when a resource is not found."""
-    pass
-
-class InvalidArgumentException(KubeflowException):
-    """Raised when an invalid argument is passed to a function."""
-    pass
+__all__ = ["Owner", "Profile", "ProfileSpec", "ResourceQuota"]

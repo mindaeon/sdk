@@ -13,11 +13,14 @@
 # limitations under the License.
 
 import os
-from typing import Literal, Optional
+from typing import Optional
 
+import yaml
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import yaml
+
+
+from typing import Literal
 
 
 class AuthConfig(BaseModel):
@@ -59,7 +62,7 @@ class KubeflowConfig(BaseSettings):
         # Load YAML config if available
         config_file_path = self.config_file or os.getenv("KUBEFLOW_CONFIG_FILE")
         if config_file_path and os.path.exists(config_file_path):
-            with open(config_file_path) as f:
+            with open(config_file_path, "r") as f:
                 yaml_data = yaml.safe_load(f) or {}
 
             # Apply YAML values only if not already set

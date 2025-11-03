@@ -14,10 +14,9 @@
 
 """Unit tests for kubeflow.core.base_client and helper methods."""
 
-from unittest.mock import patch
-
-from kubernetes import client
 import pytest
+from unittest.mock import patch
+from kubernetes import client
 
 from kubeflow.core.base_client import BaseClient
 from kubeflow.core.config import KubeflowConfig
@@ -43,10 +42,11 @@ def test_kubeconfig_auth_provider_selected(base_cfg):
     base_cfg.auth.provider = "kubeconfig"
     fake_conf = client.Configuration()
 
-    with (
-        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_provider,
-        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
-    ):
+    with patch(
+        "kubeflow.core.base_client.KubeconfigAuthProvider"
+    ) as mock_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
         mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
         base = BaseClient(base_cfg)
         mock_provider.assert_called_once()
@@ -60,10 +60,11 @@ def test_incluster_auth_provider_selected(base_cfg):
     base_cfg.auth.provider = "incluster"
     fake_conf = client.Configuration()
 
-    with (
-        patch("kubeflow.core.base_client.InClusterAuthProvider") as mock_provider,
-        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
-    ):
+    with patch(
+        "kubeflow.core.base_client.InClusterAuthProvider"
+    ) as mock_provider, patch(
+        "kubeflow.core.base_client.client.ApiClient"
+    ) as mock_api_client:
         mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
         base = BaseClient(base_cfg)
         mock_provider.assert_called_once()
@@ -118,7 +119,9 @@ def test_list_custom_resources(mock_auth_provider, mock_custom_api_class):
     }
 
     base = BaseClient()
-    resources = base.list_custom_resources(group="testgroup", version="v1", plural="tests")
+    resources = base.list_custom_resources(
+        group="testgroup", version="v1", plural="tests"
+    )
 
     mock_custom_api_instance.list_namespaced_custom_object.assert_called_once()
     assert len(resources) == 1
@@ -133,7 +136,9 @@ def test_create_custom_resource(mock_auth_provider, mock_custom_api_class):
         client.Configuration()
     )
     mock_custom_api_instance = mock_custom_api_class.return_value
-    mock_custom_api_instance.create_namespaced_custom_object.return_value = SAMPLE_RESOURCE
+    mock_custom_api_instance.create_namespaced_custom_object.return_value = (
+        SAMPLE_RESOURCE
+    )
 
     base = BaseClient()
     resource = base.create_custom_resource(
@@ -156,7 +161,9 @@ def test_delete_custom_resource(mock_auth_provider, mock_custom_api_class):
         client.Configuration()
     )
     mock_custom_api_instance = mock_custom_api_class.return_value
-    mock_custom_api_instance.delete_namespaced_custom_object.return_value = {"status": "Success"}
+    mock_custom_api_instance.delete_namespaced_custom_object.return_value = {
+        "status": "Success"
+    }
 
     base = BaseClient()
     response = base.delete_custom_resource(
