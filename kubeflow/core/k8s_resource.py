@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -25,10 +25,10 @@ class K8sResource(BaseModel):
 
     api_version: str = Field(..., alias="apiVersion")
     kind: str
-    metadata: Dict[str, Any]
-    spec: Optional[Dict[str, Any]] = None
-    status: Optional[Dict[str, Any]] = None
-    raw: Dict[str, Any] = Field(..., alias="_raw")
+    metadata: dict[str, Any]
+    spec: Optional[dict[str, Any]] = None
+    status: Optional[dict[str, Any]] = None
+    raw: dict[str, Any] = Field(..., alias="_raw")
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -57,9 +57,9 @@ class K8sResource(BaseModel):
         return self.metadata.get("creationTimestamp")
 
     @property
-    def labels(self) -> Dict[str, str]:
+    def labels(self) -> dict[str, str]:
         return self.metadata.get("labels", {})
 
     @property
-    def annotations(self) -> Dict[str, str]:
+    def annotations(self) -> dict[str, str]:
         return self.metadata.get("annotations", {})

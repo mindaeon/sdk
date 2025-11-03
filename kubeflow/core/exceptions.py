@@ -1,7 +1,7 @@
 # Copyright 2024 The Kubeflow Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
+# you may- not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class KubeflowException(Exception):
+
+class KubeflowError(Exception):
     """Base class for all Kubeflow SDK exceptions."""
+
     pass
 
-class APIException(KubeflowException):
+
+class APIError(KubeflowError):
     """Raised when an API call fails."""
+
     pass
 
-class NotFoundException(APIException):
+
+class NotFoundError(APIError):
     """Raised when a resource is not found."""
+
     pass
 
-class InvalidArgumentException(KubeflowException):
+
+class InvalidArgumentError(KubeflowError):
     """Raised when an invalid argument is passed to a function."""
+
     pass

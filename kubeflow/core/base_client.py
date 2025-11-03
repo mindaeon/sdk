@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from kubernetes import client
 
@@ -35,9 +35,7 @@ class BaseClient:
         elif self.config.auth.provider == "incluster":
             auth_provider = InClusterAuthProvider()
         else:
-            raise ValueError(
-                f"Invalid auth provider: {self.config.auth.provider}"
-            )
+            raise ValueError(f"Invalid auth provider: {self.config.auth.provider}")
 
         k8s_config = auth_provider.get_api_client_configuration()
         self.api_client = client.ApiClient(k8s_config)
@@ -61,41 +59,6 @@ class BaseClient:
             plural=plural,
             name=name,
         )
-
-    def get_cluster_custom_resource(
-        self, group: str, version: str, plural: str, name: str
-    ) -> K8sResource:
-        """Gets a cluster-scoped Kubernetes custom resource."""
-        api_response = self.custom_api.get_cluster_custom_object(
-            group=group,
-            version=version,
-            plural=plural,
-            name=name,
-        )
-        return K8sResource(**api_response)
-
-    def create_cluster_custom_resource(
-        self, group: str, version: str, plural: str, body: Dict[str, Any]
-    ) -> K8sResource:
-        """Creates a cluster-scoped Kubernetes custom resource."""
-        api_response = self.custom_api.create_cluster_custom_object(
-            group=group,
-            version=version,
-            plural=plural,
-            body=body,
-        )
-        return K8sResource(**api_response)
-
-    def delete_cluster_custom_resource(
-        self, group: str, version: str, plural: str, name: str
-    ) -> Dict[str, Any]:
-        """Deletes a cluster-scoped Kubernetes custom resource."""
-        return self.custom_api.delete_cluster_custom_object(
-            group=group,
-            version=version,
-            plural=plural,
-            name=name,
-        )
         return K8sResource(**api_response)
 
     def list_custom_resources(
@@ -104,7 +67,7 @@ class BaseClient:
         version: str,
         plural: str,
         namespace: Optional[str] = None,
-    ) -> List[K8sResource]:
+    ) -> list[K8sResource]:
         """Lists Kubernetes custom resources."""
         namespace = namespace or self.config.client.namespace
         api_response = self.custom_api.list_namespaced_custom_object(
@@ -120,7 +83,7 @@ class BaseClient:
         group: str,
         version: str,
         plural: str,
-        body: Dict[str, Any],
+        body: dict[str, Any],
         namespace: Optional[str] = None,
     ) -> K8sResource:
         """Creates a Kubernetes custom resource."""
@@ -141,7 +104,7 @@ class BaseClient:
         plural: str,
         name: str,
         namespace: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Deletes a Kubernetes custom resource."""
         namespace = namespace or self.config.client.namespace
         return self.custom_api.delete_namespaced_custom_object(

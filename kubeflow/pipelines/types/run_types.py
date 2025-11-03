@@ -14,7 +14,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -37,11 +37,11 @@ class Run(BaseModel):
     display_name: str
     created_at: datetime
     state: RunState
-    error: Optional[Dict[str, Any]] = None
-    pipeline_version_reference: Optional[Dict[str, Any]] = None
+    error: Optional[dict[str, Any]] = None
+    pipeline_version_reference: Optional[dict[str, Any]] = None
 
 
 class RunDetails(Run):
     """Detailed information about a Kubeflow Pipeline Run."""
 
-    run_details: Dict[str, Any]
+    run_details: dict[str, Any]

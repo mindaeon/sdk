@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass, field
 import os
 import tempfile
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 from unittest.mock import patch
 
 import pytest
@@ -101,9 +101,7 @@ def test_kubeflow_config_loading(test_case: TestCase):
     """Tests the loading precedence of KubeflowConfig."""
     print(f"Executing test: {test_case.name}")
     try:
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".yaml"
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yaml") as f:
             if test_case.config_data is not None:
                 yaml.dump(test_case.config_data, f)
             temp_config_path = f.name
@@ -123,9 +121,7 @@ def test_kubeflow_config_loading(test_case: TestCase):
         assert test_case.expected_status == FAILED
         assert isinstance(e, test_case.expected_error)
     finally:
-        if "temp_config_path" in locals() and os.path.exists(
-            temp_config_path
-        ):
+        if "temp_config_path" in locals() and os.path.exists(temp_config_path):
             os.remove(temp_config_path)
 
     print("Test execution complete")

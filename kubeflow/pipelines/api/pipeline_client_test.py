@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import MagicMock, mock_open, patch
 
-import pytest
 from kubernetes import client
+import pytest
+
 from kubeflow.core.config import KubeflowConfig
 from kubeflow.pipelines.api.pipeline_client import PipelineClient
 
@@ -30,13 +31,11 @@ def fake_config():
 
 def test_create_pipeline(fake_config):
     """Tests the create_pipeline method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "builtins.open", mock_open(read_data=b"test-data")
-    ), patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("builtins.open", mock_open(read_data=b"test-data")),
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -57,11 +56,10 @@ def test_create_pipeline(fake_config):
 
 def test_get_pipeline(fake_config):
     """Tests the get_pipeline method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -76,11 +74,10 @@ def test_get_pipeline(fake_config):
 
 def test_list_pipelines(fake_config):
     """Tests the list_pipelines method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -88,18 +85,15 @@ def test_list_pipelines(fake_config):
         pipeline_client = PipelineClient(config=fake_config)
         pipeline_client.list_pipelines()
 
-        pipeline_client.api_client.call_api.assert_called_with(
-            "/apis/v2beta1/pipelines", "GET"
-        )
+        pipeline_client.api_client.call_api.assert_called_with("/apis/v2beta1/pipelines", "GET")
 
 
 def test_delete_pipeline(fake_config):
     """Tests the delete_pipeline method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -114,11 +108,10 @@ def test_delete_pipeline(fake_config):
 
 def test_get_pipeline_by_name(fake_config):
     """Tests the get_pipeline_by_name method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient") as mock_api_client,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -133,9 +126,5 @@ def test_get_pipeline_by_name(fake_config):
         pipeline_client = PipelineClient(config=fake_config)
         pipeline_client.get_pipeline_by_name("pipeline-2")
 
-        pipeline_client.api_client.call_api.assert_any_call(
-            "/apis/v2beta1/pipelines", "GET"
-        )
-        pipeline_client.api_client.call_api.assert_called_with(
-            "/apis/v2beta1/pipelines/2", "GET"
-        )
+        pipeline_client.api_client.call_api.assert_any_call("/apis/v2beta1/pipelines", "GET")
+        pipeline_client.api_client.call_api.assert_called_with("/apis/v2beta1/pipelines/2", "GET")

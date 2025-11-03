@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The Kubeflow Dashboard SDK."""
+"""The Kubeflow SDK client."""
 
-from .dashboard_client import DashboardClient
+from .kubeflow_client import KubeflowClient
 
-__all__ = ["DashboardClient"]
+__all__ = ["KubeflowClient"]

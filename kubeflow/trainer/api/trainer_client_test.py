@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import pytest
+from kubeflow_trainer_api.models import (
+    IoK8sApiBatchV1JobTemplateSpec as V1alpha2JobTemplate,
+    JobsetV1alpha2ReplicatedJob as V1alpha2ReplicatedJob,
+)
 from kubernetes import client
+import pytest
+
 from kubeflow.core.config import KubeflowConfig
 from kubeflow.trainer.api.trainer_client import TrainerClient
-from kubeflow.core.k8s_resource import K8sResource
 from kubeflow.trainer.types import types
-from kubeflow_trainer_api.models import (
-    JobsetV1alpha2ReplicatedJob as V1alpha2ReplicatedJob,
-    IoK8sApiBatchV1JobTemplateSpec as V1alpha2JobTemplate,
-)
 
 SAMPLE_PYTORCHJOB = {
     "apiVersion": "kubeflow.org/v1",
@@ -61,9 +61,7 @@ SAMPLE_RUNTIME = {
                         name="node",
                         template=V1alpha2JobTemplate(
                             metadata={
-                                "labels": {
-                                    "trainer.kubeflow.org/trainjob-ancestor-step": "node"
-                                }
+                                "labels": {"trainer.kubeflow.org/trainjob-ancestor-step": "node"}
                             },
                             spec={
                                 "template": {
@@ -96,19 +94,15 @@ def fake_config():
 
 def test_get_job(fake_config):
     """Tests the get_job method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CustomObjectsApi"
-    ) as mock_custom_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
-        mock_custom_api.return_value.get_namespaced_custom_object.return_value = (
-            SAMPLE_PYTORCHJOB
-        )
+        mock_custom_api.return_value.get_namespaced_custom_object.return_value = SAMPLE_PYTORCHJOB
         trainer_client = TrainerClient(config=fake_config)
         trainer_client.custom_api = mock_custom_api.return_value
         trainer_client.get_runtime = MagicMock()
@@ -125,13 +119,11 @@ def test_get_job(fake_config):
 
 def test_list_jobs(fake_config):
     """Tests the list_jobs method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CustomObjectsApi"
-    ) as mock_custom_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -153,13 +145,11 @@ def test_list_jobs(fake_config):
 
 def test_delete_job(fake_config):
     """Tests the delete_job method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CustomObjectsApi"
-    ) as mock_custom_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -178,19 +168,15 @@ def test_delete_job(fake_config):
 
 def test_get_runtime(fake_config):
     """Tests the get_runtime method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CustomObjectsApi"
-    ) as mock_custom_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
-        mock_custom_api.return_value.get_namespaced_custom_object.return_value = (
-            SAMPLE_RUNTIME
-        )
+        mock_custom_api.return_value.get_namespaced_custom_object.return_value = SAMPLE_RUNTIME
         trainer_client = TrainerClient(config=fake_config)
         trainer_client.custom_api = mock_custom_api.return_value
         trainer_client.get_runtime("test-runtime")
@@ -206,13 +192,11 @@ def test_get_runtime(fake_config):
 
 def test_list_runtimes(fake_config):
     """Tests the list_runtimes method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CustomObjectsApi"
-    ) as mock_custom_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -237,13 +221,11 @@ def test_train(fake_config):
     def dummy_func():
         pass
 
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CustomObjectsApi"
-    ) as mock_custom_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CustomObjectsApi") as mock_custom_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )
@@ -264,13 +246,11 @@ def test_train(fake_config):
 
 def test_get_job_logs(fake_config):
     """Tests the get_job_logs method."""
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_auth_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.core.base_client.client.CoreV1Api"
-    ) as mock_core_api:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_auth_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.core.base_client.client.CoreV1Api") as mock_core_api,
+    ):
         mock_auth_provider.return_value.get_api_client_configuration.return_value = (
             client.Configuration()
         )

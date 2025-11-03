@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterator
 import logging
 import random
 import re
 import string
-from collections.abc import Iterator
-from typing import List, Optional, Union
+from typing import Optional, Union
 import uuid
 
 from kubeflow_trainer_api import models
@@ -37,7 +37,7 @@ class TrainerClient(BaseClient):
         """Initialize a Kubeflow Trainer client."""
         super().__init__(config=config)
 
-    def list_runtimes(self) -> List[types.Runtime]:
+    def list_runtimes(self) -> list[types.Runtime]:
         """List available runtimes."""
         resources = self.list_custom_resources(
             group=constants.GROUP,
@@ -80,7 +80,7 @@ class TrainerClient(BaseClient):
         )
         return train_job_name
 
-    def list_jobs(self) -> List[types.TrainJob]:
+    def list_jobs(self) -> list[types.TrainJob]:
         """List created TrainJobs."""
         resources = self.list_custom_resources(
             group=constants.GROUP,
@@ -142,9 +142,7 @@ class TrainerClient(BaseClient):
     def _runtime_from_k8s_resource(self, resource: K8sResource) -> types.Runtime:
         """Convert a K8sResource to a Runtime."""
         spec = resource.spec or {}
-        ml_policy = models.TrainerV1alpha1MLPolicy(
-            **spec.get("mlPolicy", {})
-        )
+        ml_policy = models.TrainerV1alpha1MLPolicy(**spec.get("mlPolicy", {}))
         return types.Runtime(
             name=resource.name,
             trainer=utils.get_runtime_trainer(
@@ -169,7 +167,7 @@ class TrainerClient(BaseClient):
         )
         return trainjob
 
-    def _get_steps(self, job_name: str, runtime: types.Runtime) -> List[types.Step]:
+    def _get_steps(self, job_name: str, runtime: types.Runtime) -> list[types.Step]:
         """Get steps for a TrainJob."""
         pods = self.core_v1_api.list_namespaced_pod(
             namespace=self.config.client.namespace,
@@ -207,10 +205,14 @@ class TrainerClient(BaseClient):
         """Get the status of a TrainJob."""
         conditions = status.get("conditions", [])
         for c in conditions:
-            if c.get("type") in {
-                constants.TRAINJOB_COMPLETE,
-                constants.TRAINJOB_FAILED,
-            } and c.get("status") == "True":
+            if (
+                c.get("type")
+                in {
+                    constants.TRAINJOB_COMPLETE,
+                    constants.TRAINJOB_FAILED,
+                }
+                and c.get("status") == "True"
+            ):
                 return c.get("type")
         return constants.TRAINJOB_RUNNING
 
@@ -239,9 +241,7 @@ class TrainerClient(BaseClient):
                     runtime, trainer, initializer
                 )
             else:
-                raise ValueError(
-                    f"The trainer type {type(trainer)} is not supported."
-                )
+                raise ValueError(f"The trainer type {type(trainer)} is not supported.")
 
         return models.TrainerV1alpha1TrainJobSpec(
             runtimeRef=models.TrainerV1alpha1RuntimeRef(name=runtime.name),

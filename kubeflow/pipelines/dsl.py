@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import inspect
 from functools import wraps
+import inspect
 from typing import Callable
 
 from kubeflow.pipelines.types.component_spec import ComponentSpec, InputSpec, OutputSpec

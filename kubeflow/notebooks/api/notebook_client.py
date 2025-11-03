@@ -12,9 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class NotebookClient:
+from typing import Optional
+
+from kubeflow.core.base_client import BaseClient
+from kubeflow.core.config import KubeflowConfig
+
+
+class NotebookClient(BaseClient):
     """A client for interacting with Kubeflow Notebooks."""
 
-    def __init__(self):
+    def __init__(self, config: Optional[KubeflowConfig] = None):
         """Initializes the NotebookClient."""
-        pass
+        super().__init__(config=config)

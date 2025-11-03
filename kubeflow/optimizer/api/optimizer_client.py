@@ -15,7 +15,7 @@
 import logging
 import random
 import string
-from typing import Any, List, Optional
+from typing import Any, Optional
 import uuid
 
 from kubeflow_katib_api import models
@@ -123,7 +123,7 @@ class OptimizerClient(BaseClient):
         )
         return job_name
 
-    def list_jobs(self) -> List[OptimizationJob]:
+    def list_jobs(self) -> list[OptimizationJob]:
         """List created OptimizationJobs."""
         resources = self.list_custom_resources(
             group=constants.GROUP,
@@ -171,7 +171,7 @@ class OptimizerClient(BaseClient):
         )
         return job
 
-    def _get_trials(self, job_name: str) -> List[Trial]:
+    def _get_trials(self, job_name: str) -> list[Trial]:
         """Get Trials for an OptimizationJob."""
         resources = self.list_custom_resources(
             group=constants.GROUP,
@@ -187,14 +187,10 @@ class OptimizerClient(BaseClient):
                 trial = Trial(
                     name=res.name,
                     parameters={
-                        p["name"]: p["value"]
-                        for p in spec.get("parameterAssignments", [])
+                        p["name"]: p["value"] for p in spec.get("parameterAssignments", [])
                     },
                     trainjob=self.trainer_client.get_job(name=res.name),
-                    metrics=[
-                        Metric(**m)
-                        for m in status.get("observation", {}).get("metrics", [])
-                    ],
+                    metrics=[Metric(**m) for m in status.get("observation", {}).get("metrics", [])],
                 )
                 trials.append(trial)
         return trials
@@ -203,15 +199,9 @@ class OptimizerClient(BaseClient):
         """Get the status of an OptimizationJob."""
         conditions = status.get("conditions", [])
         for c in conditions:
-            if (
-                c.get("type") == constants.EXPERIMENT_SUCCEEDED
-                and c.get("status") == "True"
-            ):
+            if c.get("type") == constants.EXPERIMENT_SUCCEEDED and c.get("status") == "True":
                 return constants.OPTIMIZATION_JOB_COMPLETE
-            elif (
-                c.get("type") == constants.OPTIMIZATION_JOB_FAILED
-                and c.get("status") == "True"
-            ):
+            elif c.get("type") == constants.OPTIMIZATION_JOB_FAILED and c.get("status") == "True":
                 return constants.OPTIMIZATION_JOB_FAILED
         return constants.OPTIMIZATION_JOB_RUNNING
 
@@ -253,9 +243,7 @@ class OptimizerClient(BaseClient):
     def _get_algorithm(self, algorithm: dict) -> BaseAlgorithm:
         """Get algorithm from Katib spec."""
         name = algorithm.get("algorithmName")
-        settings = {
-            s["name"]: s["value"] for s in algorithm.get("algorithmSettings", [])
-        }
+        settings = {s["name"]: s["value"] for s in algorithm.get("algorithmSettings", [])}
         if name == "random":
             return RandomSearch()
         elif name == "grid":

@@ -20,11 +20,8 @@ from typing import Optional, Union
 import kubeflow.common.constants as common_constants
 from kubeflow.optimizer.types.algorithm_types import GridSearch, RandomSearch
 from kubeflow.optimizer.types.search_types import (
-    CategoricalSearchSpace,
-    ContinuousSearchSpace,
-    DiscreteSearchSpace,
-    SearchSpace,
     Search,
+    SearchSpace,
 )
 from kubeflow.trainer.types.types import TrainJob
 

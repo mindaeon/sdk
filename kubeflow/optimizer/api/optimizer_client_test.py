@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 from kubernetes import client
+import pytest
+
+from kubeflow.core.config import KubeflowConfig
 from kubeflow.core.k8s_resource import K8sResource
 from kubeflow.optimizer.api.optimizer_client import OptimizerClient
 from kubeflow.optimizer.types.optimization_types import Search
 from kubeflow.trainer.types.types import CustomTrainer, TrainJobTemplate
-from kubeflow.core.config import KubeflowConfig
 
 # A sample Katib Experiment for testing
 SAMPLE_EXPERIMENT = {
@@ -58,13 +59,11 @@ def test_optimizer_client_optimize(fake_config):
     def dummy_func():
         pass
 
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client, patch(
-        "kubeflow.optimizer.api.optimizer_client.TrainerClient"
-    ) as mock_trainer_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+        patch("kubeflow.optimizer.api.optimizer_client.TrainerClient") as mock_trainer_client,
+    ):
         mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
         mock_trainer_client.return_value.get_runtime.return_value = MagicMock()
         optimizer_client = OptimizerClient(fake_config)
@@ -82,11 +81,10 @@ def test_optimizer_client_get_job(fake_config):
     fake_config.auth.provider = "kubeconfig"
     fake_conf = client.Configuration()
 
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+    ):
         mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
         optimizer_client = OptimizerClient(fake_config)
         optimizer_client.get_custom_resource = MagicMock(
@@ -102,11 +100,10 @@ def test_optimizer_client_list_jobs(fake_config):
     fake_config.auth.provider = "kubeconfig"
     fake_conf = client.Configuration()
 
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+    ):
         mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
         optimizer_client = OptimizerClient(fake_config)
         optimizer_client.list_custom_resources = MagicMock(
@@ -122,11 +119,10 @@ def test_optimizer_client_delete_job(fake_config):
     fake_config.auth.provider = "kubeconfig"
     fake_conf = client.Configuration()
 
-    with patch(
-        "kubeflow.core.base_client.KubeconfigAuthProvider"
-    ) as mock_provider, patch(
-        "kubeflow.core.base_client.client.ApiClient"
-    ) as mock_api_client:
+    with (
+        patch("kubeflow.core.base_client.KubeconfigAuthProvider") as mock_provider,
+        patch("kubeflow.core.base_client.client.ApiClient"),
+    ):
         mock_provider.return_value.get_api_client_configuration.return_value = fake_conf
         optimizer_client = OptimizerClient(fake_config)
         optimizer_client.delete_custom_resource = MagicMock()

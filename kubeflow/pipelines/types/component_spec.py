@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -38,5 +38,5 @@ class ComponentSpec(BaseModel):
 
     name: str
     description: Optional[str] = None
-    inputs: List[InputSpec] = []
-    outputs: List[OutputSpec] = []
+    inputs: list[InputSpec] = []
+    outputs: list[OutputSpec] = []
